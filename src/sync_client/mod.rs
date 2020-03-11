@@ -7,6 +7,7 @@ use crate::{
 use failure::Error as Failure;
 use std::convert::TryInto;
 use std::fmt::{self, Debug, Formatter};
+use std::path::Path;
 use tokio::runtime::{Builder, Runtime};
 use tonic::transport::Endpoint;
 use tonic::Status;
@@ -52,6 +53,28 @@ impl Client {
             .build()
             .unwrap();
         let client = rt.block_on(AsyncClient::new(endpoints))?;
+        Ok(Self { rt, client })
+    }
+
+    pub fn new_with_tls_client_auth<S: TryInto<Endpoint>>(
+        domain_name: impl Into<String>,
+        endpoints: impl Iterator<Item = S>,
+        server_root_ca_cert: impl AsRef<Path>,
+        client_cert: impl AsRef<Path>,
+        client_key: impl AsRef<Path>,
+    ) -> Result<Self, Failure> {
+        let mut rt = Builder::new()
+            .basic_scheduler()
+            .enable_all()
+            .build()
+            .unwrap();
+        let client = rt.block_on(AsyncClient::new_with_tls_client_auth(
+            domain_name,
+            endpoints,
+            server_root_ca_cert,
+            client_cert,
+            client_key,
+        ))?;
         Ok(Self { rt, client })
     }
 

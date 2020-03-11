@@ -8,7 +8,8 @@ use async_trait::async_trait;
 use failure::Error as Failure;
 use std::convert::TryInto;
 use std::fmt::{self, Debug, Formatter};
-use tonic::transport::{Channel, Endpoint};
+use std::path::Path;
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 use tonic::{Request, Response, Status};
 
 mod txn;
@@ -45,9 +46,9 @@ impl Debug for Client {
 }
 
 impl Client {
-    pub async fn new<S: TryInto<Endpoint>>(
+    fn balance_list<S: TryInto<Endpoint>>(
         endpoints: impl Iterator<Item = S>,
-    ) -> Result<Self, Failure> {
+    ) -> Result<Vec<Endpoint>, Failure> {
         let mut balance_list: Vec<Endpoint> = Vec::new();
         for maybe_endpoint in endpoints {
             let endpoint = match maybe_endpoint.try_into() {
@@ -60,7 +61,43 @@ impl Client {
         }
         if balance_list.is_empty() {
             return Err(ClientError::NoEndpointsDefined.into());
-        }
+        };
+        Ok(balance_list)
+    }
+
+    pub async fn new<S: TryInto<Endpoint>>(
+        endpoints: impl Iterator<Item = S>,
+    ) -> Result<Self, Failure> {
+        let balance_list = Self::balance_list(endpoints)?;
+        let channel = Channel::balance_list(balance_list.clone().into_iter());
+        let client = DgraphClient::new(channel);
+        Ok(Self {
+            client,
+            balance_list,
+        })
+    }
+
+    pub async fn new_with_tls_client_auth<S: TryInto<Endpoint>>(
+        domain_name: impl Into<String>,
+        endpoints: impl Iterator<Item = S>,
+        server_root_ca_cert: impl AsRef<Path>,
+        client_cert: impl AsRef<Path>,
+        client_key: impl AsRef<Path>,
+    ) -> Result<Self, Failure> {
+        let server_root_ca_cert_future = tokio::fs::read(server_root_ca_cert);
+        let client_cert_future = tokio::fs::read(client_cert);
+        let client_key_future = tokio::fs::read(client_key);
+        let server_root_ca_cert = Certificate::from_pem(server_root_ca_cert_future.await?);
+        let client_identity =
+            Identity::from_pem(client_cert_future.await?, client_key_future.await?);
+        let tls = ClientTlsConfig::new()
+            .domain_name(domain_name)
+            .ca_certificate(server_root_ca_cert)
+            .identity(client_identity);
+        let balance_list = Self::balance_list(endpoints)?
+            .into_iter()
+            .map(|endpoint| endpoint.tls_config(tls.clone()))
+            .collect::<Vec<Endpoint>>();
         let channel = Channel::balance_list(balance_list.clone().into_iter());
         let client = DgraphClient::new(channel);
         Ok(Self {

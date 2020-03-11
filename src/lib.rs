@@ -8,6 +8,7 @@ use api::{
 pub use async_client::{Client as AsyncClient, IDgraphClient as IAsyncClient};
 use failure::Error;
 use std::convert::TryInto;
+use std::path::Path;
 pub use sync_client::{Client as SyncClient, IDgraphClient as ISyncCLient};
 pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
@@ -51,9 +52,42 @@ impl Builder {
         async_client::Client::new(endpoints).await
     }
 
+    pub async fn async_client_with_tls_auth<S: TryInto<Endpoint>>(
+        domain_name: impl Into<String>,
+        endpoints: impl Iterator<Item = S>,
+        server_root_ca_cert: impl AsRef<Path>,
+        client_cert: impl AsRef<Path>,
+        client_key: impl AsRef<Path>,
+    ) -> Result<AsyncClient, Error> {
+        async_client::Client::new_with_tls_client_auth(
+            domain_name,
+            endpoints,
+            server_root_ca_cert,
+            client_cert,
+            client_key,
+        )
+        .await
+    }
+
     pub fn sync_client<S: TryInto<Endpoint>>(
         endpoints: impl Iterator<Item = S>,
     ) -> Result<SyncClient, Error> {
         sync_client::Client::new(endpoints)
+    }
+
+    pub fn sync_client_with_tls_auth<S: TryInto<Endpoint>>(
+        domain_name: impl Into<String>,
+        endpoints: impl Iterator<Item = S>,
+        server_root_ca_cert: impl AsRef<Path>,
+        client_cert: impl AsRef<Path>,
+        client_key: impl AsRef<Path>,
+    ) -> Result<SyncClient, Error> {
+        sync_client::Client::new_with_tls_client_auth(
+            domain_name,
+            endpoints,
+            server_root_ca_cert,
+            client_cert,
+            client_key,
+        )
     }
 }
