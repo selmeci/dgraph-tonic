@@ -15,7 +15,7 @@ use tonic::{Request, Response, Status};
 mod txn;
 
 #[async_trait]
-pub trait IDgraphClient: Clone {
+pub trait IDgraphClient: Clone + Sized {
     async fn login(
         &mut self,
         user_id: String,

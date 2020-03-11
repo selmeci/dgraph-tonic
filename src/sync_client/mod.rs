@@ -14,7 +14,7 @@ use tonic::Status;
 
 mod txn;
 
-pub trait IDgraphClient: Clone {
+pub trait IDgraphClient: Clone + Sized {
     fn login(&mut self, user_id: String, password: String) -> ClientResult<DgraphResponse, Status>;
 
     fn query(&mut self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status>;
