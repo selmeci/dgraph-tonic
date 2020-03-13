@@ -1,9 +1,10 @@
-use crate::sync_client::txn::read_only::ReadOnly;
-use crate::sync_client::txn::{IState, TxnState, TxnVariant};
-use crate::Request;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fmt::Debug;
+
+use crate::sync_client::txn::read_only::ReadOnly;
+use crate::sync_client::txn::{IState, TxnState, TxnVariant};
+use crate::Request;
 
 #[derive(Clone, Debug)]
 pub struct BestEffort {
@@ -23,8 +24,10 @@ impl IState for BestEffort {
     }
 }
 
+pub type BestEffortTxn = TxnVariant<BestEffort>;
+
 impl TxnVariant<ReadOnly> {
-    pub fn best_effort(self) -> TxnVariant<BestEffort> {
+    pub fn best_effort(self) -> BestEffortTxn {
         TxnVariant {
             state: self.state,
             extra: BestEffort {

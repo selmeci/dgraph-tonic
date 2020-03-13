@@ -1,14 +1,20 @@
-pub use crate::async_client::txn::default::Txn;
-use crate::async_client::{Client, IDgraphClient};
-use crate::errors::DgraphError;
-use crate::{Request, Response, TxnContext};
-use async_trait::async_trait;
-use log::error;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
+
+use log::error;
+
+use async_trait::async_trait;
+
+pub use crate::async_client::txn::best_effort::BestEffortTxn;
+pub use crate::async_client::txn::default::Txn;
+pub use crate::async_client::txn::mutated::MutatedTxn;
+pub use crate::async_client::txn::read_only::ReadOnlyTxn;
+use crate::async_client::{Client, IDgraphClient};
+use crate::errors::DgraphError;
+use crate::{Request, Response, TxnContext};
 
 mod best_effort;
 mod default;
@@ -110,11 +116,13 @@ impl<S: IState + Debug + Send + Sync + Clone> TxnVariant<S> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::Mutation;
     use serde_derive::{Deserialize, Serialize};
     use serde_json;
     use tokio::runtime::Runtime;
+
+    use crate::Mutation;
+
+    use super::*;
 
     #[derive(Serialize, Deserialize, Default, Debug)]
     struct Person {

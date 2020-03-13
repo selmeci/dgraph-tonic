@@ -1,13 +1,16 @@
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+use log::error;
+
+use async_trait::async_trait;
+
 use crate::async_client::txn::default::Base;
 use crate::async_client::txn::{IState, TxnState, TxnVariant};
 use crate::async_client::IDgraphClient;
 use crate::errors::DgraphError;
 use crate::{Assigned, Mutation, Request};
-use async_trait::async_trait;
-use log::error;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
-use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct Mutated {
@@ -42,8 +45,10 @@ impl IState for Mutated {
     }
 }
 
+pub type MutatedTxn = TxnVariant<Mutated>;
+
 impl TxnVariant<Base> {
-    pub fn mutated(self) -> TxnVariant<Mutated> {
+    pub fn mutated(self) -> MutatedTxn {
         TxnVariant {
             state: self.state,
             extra: Mutated {

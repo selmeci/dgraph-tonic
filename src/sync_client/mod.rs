@@ -1,16 +1,18 @@
+use std::convert::TryInto;
+use std::fmt::{self, Debug, Formatter};
+use std::path::Path;
+
+use failure::Error as Failure;
+use tokio::runtime::{Builder, Runtime};
+use tonic::transport::Endpoint;
+use tonic::Status;
+
 use crate::async_client::{Client as AsyncClient, IDgraphClient as AsyncIDgraphClient};
-use crate::sync_client::txn::Txn;
+pub use crate::sync_client::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
 use crate::{
     Assigned, ClientResult, Mutation, Operation, Payload, Request as DgraphRequest,
     Response as DgraphResponse, TxnContext, Version,
 };
-use failure::Error as Failure;
-use std::convert::TryInto;
-use std::fmt::{self, Debug, Formatter};
-use std::path::Path;
-use tokio::runtime::{Builder, Runtime};
-use tonic::transport::Endpoint;
-use tonic::Status;
 
 mod txn;
 

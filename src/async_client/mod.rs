@@ -1,16 +1,19 @@
-pub use crate::async_client::txn::Txn;
+use std::convert::TryInto;
+use std::fmt::{self, Debug, Formatter};
+use std::path::Path;
+
+use failure::Error as Failure;
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
+use tonic::{Request, Response, Status};
+
+use async_trait::async_trait;
+
+pub use crate::async_client::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
 use crate::errors::ClientError;
 use crate::{
     Assigned, Check, ClientResult, DgraphClient, LoginRequest, Mutation, Operation, Payload,
     Request as DgraphRequest, Response as DgraphResponse, TxnContext, Version,
 };
-use async_trait::async_trait;
-use failure::Error as Failure;
-use std::convert::TryInto;
-use std::fmt::{self, Debug, Formatter};
-use std::path::Path;
-use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
-use tonic::{Request, Response, Status};
 
 mod txn;
 
@@ -161,8 +164,9 @@ impl IDgraphClient for Client {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tokio::runtime::Runtime;
+
+    use super::*;
 
     #[test]
     fn alter() {

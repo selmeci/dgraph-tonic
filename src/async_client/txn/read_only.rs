@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+
 use crate::async_client::txn::default::Base;
 use crate::async_client::txn::{IState, TxnState, TxnVariant};
 use crate::Request;
-use std::collections::HashMap;
-use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct ReadOnly {
@@ -22,8 +23,10 @@ impl IState for ReadOnly {
     }
 }
 
+pub type ReadOnlyTxn = TxnVariant<ReadOnly>;
+
 impl TxnVariant<Base> {
-    pub fn read_only(self) -> TxnVariant<ReadOnly> {
+    pub fn read_only(self) -> ReadOnlyTxn {
         TxnVariant {
             state: self.state,
             extra: ReadOnly { base: self.extra },

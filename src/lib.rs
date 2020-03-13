@@ -1,20 +1,23 @@
-pub use crate::errors::ClientError;
-pub use crate::errors::DgraphError;
+use std::convert::TryInto;
+use std::path::Path;
+
+use failure::Error;
+pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
+
 use api::dgraph_client::DgraphClient;
-use api::{
+pub use api::{
     Assigned, Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext,
     Version,
 };
 pub use async_client::{Client as AsyncClient, IDgraphClient as IAsyncClient};
-use failure::Error;
-use std::convert::TryInto;
-use std::path::Path;
 pub use sync_client::{Client as SyncClient, IDgraphClient as ISyncCLient};
-pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
-mod async_client;
+pub use crate::errors::ClientError;
+pub use crate::errors::DgraphError;
+
+pub mod async_client;
 mod errors;
-mod sync_client;
+pub mod sync_client;
 
 mod api {
     tonic::include_proto!("api");
