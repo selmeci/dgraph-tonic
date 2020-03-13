@@ -5,7 +5,7 @@ pub enum Error {
     #[fail(display = "Dgraph: Txn start mismatch")]
     StartTsMismatch,
     #[fail(display = "Dgraph: gRPC communication Error")]
-    GrpcError,
+    GrpcError(String),
     #[fail(display = "Dgraph: Txn is empty")]
     EmptyTxn,
     #[fail(display = "Dgraph: Missing Txn context")]

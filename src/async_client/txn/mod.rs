@@ -103,7 +103,7 @@ impl<S: IState + Debug + Send + Sync + Clone> TxnVariant<S> {
             Ok(response) => response,
             Err(err) => {
                 error!("Cannot query dGraph. err: {:?}", err);
-                return Err(DgraphError::GrpcError);
+                return Err(DgraphError::GrpcError(err.to_string()));
             }
         };
         match response.txn.as_ref() {

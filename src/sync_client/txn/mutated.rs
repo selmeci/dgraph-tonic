@@ -27,7 +27,7 @@ impl IState for Mutated {
             Ok(_txn_context) => Ok(()),
             Err(err) => {
                 error!("Cannot commit mutated transaction. err: {:?}", err);
-                Err(DgraphError::GrpcError)
+                Err(DgraphError::GrpcError(err.to_string()))
             }
         }
     }
@@ -64,7 +64,7 @@ impl TxnVariant<Mutated> {
             Ok(assigned) => assigned,
             Err(err) => {
                 error!("Cannot mutate transaction. err: {:?}", err);
-                return Err(DgraphError::GrpcError);
+                return Err(DgraphError::GrpcError(err.to_string()));
             }
         };
         match assigned.context.as_ref() {
