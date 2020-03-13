@@ -210,7 +210,7 @@ mod tests {
         }"#;
         let response = rt.block_on(txn.query(query));
         assert!(response.is_ok());
-        let json: UidJson = serde_json::from_slice(&response.unwrap().json).unwrap();
+        let json: UidJson = response.unwrap().try_into().unwrap();
         assert_eq!(json.uids[0].uid, "0x1");
     }
 }

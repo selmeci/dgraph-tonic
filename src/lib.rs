@@ -17,6 +17,7 @@ pub use crate::errors::DgraphError;
 
 pub mod async_client;
 mod errors;
+mod response;
 pub mod sync_client;
 
 mod api {
