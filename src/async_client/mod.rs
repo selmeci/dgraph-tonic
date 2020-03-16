@@ -2,7 +2,8 @@ use std::convert::TryInto;
 use std::fmt::{self, Debug, Formatter};
 use std::path::Path;
 
-use failure::Error as Failure;
+use failure::Error;
+use rand::Rng;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 use tonic::{Request, Response, Status};
 
@@ -38,8 +39,7 @@ pub trait IDgraphClient: Clone + Sized {
 
 #[derive(Clone)]
 pub struct Client {
-    pub(crate) balance_list: Vec<Endpoint>,
-    client: DgraphClient<Channel>,
+    stubs: Vec<DgraphClient<Channel>>,
 }
 
 impl Debug for Client {
@@ -51,7 +51,7 @@ impl Debug for Client {
 impl Client {
     fn balance_list<S: TryInto<Endpoint>>(
         endpoints: impl Iterator<Item = S>,
-    ) -> Result<Vec<Endpoint>, Failure> {
+    ) -> Result<Vec<Endpoint>, Error> {
         let mut balance_list: Vec<Endpoint> = Vec::new();
         for maybe_endpoint in endpoints {
             let endpoint = match maybe_endpoint.try_into() {
@@ -68,16 +68,26 @@ impl Client {
         Ok(balance_list)
     }
 
+    fn any_client(&self) -> DgraphClient<Channel> {
+        let mut rng = rand::thread_rng();
+        let i = rng.gen_range(0, self.stubs.len());
+        if let Some(client) = self.stubs.get(i) {
+            client.clone()
+        } else {
+            unreachable!()
+        }
+    }
+
     pub async fn new<S: TryInto<Endpoint>>(
         endpoints: impl Iterator<Item = S>,
-    ) -> Result<Self, Failure> {
+    ) -> Result<Self, Error> {
         let balance_list = Self::balance_list(endpoints)?;
-        let channel = Channel::balance_list(balance_list.clone().into_iter());
-        let client = DgraphClient::new(channel);
-        Ok(Self {
-            client,
-            balance_list,
-        })
+        let mut stubs = Vec::with_capacity(balance_list.len());
+        for endpoint in balance_list {
+            let channel = endpoint.connect().await?;
+            stubs.push(DgraphClient::new(channel));
+        }
+        Ok(Self { stubs })
     }
 
     pub async fn new_with_tls_client_auth<S: TryInto<Endpoint>>(
@@ -97,16 +107,13 @@ impl Client {
             .domain_name(domain_name)
             .ca_certificate(server_root_ca_cert)
             .identity(client_identity);
-        let balance_list = Self::balance_list(endpoints)?
-            .into_iter()
-            .map(|endpoint| endpoint.tls_config(tls.clone()))
-            .collect::<Vec<Endpoint>>();
-        let channel = Channel::balance_list(balance_list.clone().into_iter());
-        let client = DgraphClient::new(channel);
-        Ok(Self {
-            client,
-            balance_list,
-        })
+        let balance_list = Self::balance_list(endpoints)?;
+        let mut stubs = Vec::with_capacity(balance_list.len());
+        for endpoint in balance_list {
+            let channel = endpoint.tls_config(tls.clone()).connect().await?;
+            stubs.push(DgraphClient::new(channel));
+        }
+        Ok(Self { stubs })
     }
 
     pub fn new_txn(&self) -> Txn {
@@ -131,13 +138,15 @@ impl IDgraphClient for Client {
         Ok(response.into_inner())
     }
 
-    async fn query(&mut self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status> {
+    async fn query(&self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status> {
+        let mut client = self.any_client();
         let request = Request::new(query);
         let response: Response<DgraphResponse> = self.client.query(request).await?;
         Ok(response.into_inner())
     }
 
-    async fn mutate(&mut self, mu: Mutation) -> ClientResult<Assigned, Status> {
+    async fn mutate(&self, mu: Mutation) -> ClientResult<Assigned, Status> {
+        let mut client = self.any_client();
         let request = Request::new(mu);
         let response: Response<Assigned> = self.client.mutate(request).await?;
         Ok(response.into_inner())
