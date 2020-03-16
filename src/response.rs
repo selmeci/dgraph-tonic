@@ -12,7 +12,7 @@ impl Response {
         Ok(result)
     }
 
-    pub fn try_into_owned<T>(&self) -> Result<T, Error>
+    pub fn try_into_owned<T>(self) -> Result<T, Error>
     where
         T: de::DeserializeOwned,
     {
