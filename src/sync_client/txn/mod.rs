@@ -20,13 +20,13 @@ mod mutated;
 mod read_only;
 
 #[derive(Clone, Debug)]
-pub struct TxnState {
-    client: Client,
+pub struct TxnState<'a> {
+    client: &'a Client,
     context: TxnContext,
 }
 
 pub trait IState {
-    fn commit_or_abort(&self, state: TxnState) -> Result<(), DgraphError> {
+    fn commit_or_abort(&self, state: TxnState<'_>) -> Result<(), DgraphError> {
         let _ = state;
         Ok(())
     }
@@ -40,34 +40,30 @@ pub trait IState {
 }
 
 #[derive(Clone)]
-pub struct TxnVariant<S: IState + Debug + Send + Sync + Clone> {
-    state: Box<TxnState>,
+pub struct TxnVariant<'a, S: IState + Debug + Send + Sync + Clone> {
+    state: Box<TxnState<'a>>,
     extra: S,
 }
 
-impl<S: IState + Debug + Send + Sync + Clone> Deref for TxnVariant<S> {
-    type Target = Box<TxnState>;
+impl<'a, S: IState + Debug + Send + Sync + Clone> Deref for TxnVariant<'a, S> {
+    type Target = Box<TxnState<'a>>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
     }
 }
 
-impl<S: IState + Debug + Send + Sync + Clone> DerefMut for TxnVariant<S> {
+impl<'a, S: IState + Debug + Send + Sync + Clone> DerefMut for TxnVariant<'a, S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<S: IState + Debug + Send + Sync + Clone> TxnVariant<S> {
+impl<'a, S: IState + Debug + Send + Sync + Clone> TxnVariant<'a, S> {
     fn commit_or_abort(self) -> Result<(), DgraphError> {
         let extra = self.extra;
         let state = *self.state;
         extra.commit_or_abort(state)
-    }
-
-    pub fn downcast(self) -> TxnState {
-        *self.state
     }
 
     pub fn discard(mut self) -> Result<(), DgraphError> {

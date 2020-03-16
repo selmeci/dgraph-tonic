@@ -23,10 +23,10 @@ impl IState for ReadOnly {
     }
 }
 
-pub type ReadOnlyTxn = TxnVariant<ReadOnly>;
+pub type ReadOnlyTxn<'a> = TxnVariant<'a, ReadOnly>;
 
-impl TxnVariant<Base> {
-    pub fn read_only(self) -> ReadOnlyTxn {
+impl<'a> TxnVariant<'a, Base> {
+    pub fn read_only(self) -> ReadOnlyTxn<'a> {
         TxnVariant {
             state: self.state,
             extra: ReadOnly { base: self.extra },

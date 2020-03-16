@@ -21,20 +21,20 @@ mod txn;
 #[async_trait]
 pub trait IDgraphClient: Clone + Sized {
     async fn login(
-        &mut self,
+        &self,
         user_id: String,
         password: String,
     ) -> ClientResult<DgraphResponse, Status>;
 
-    async fn query(&mut self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status>;
+    async fn query(&self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status>;
 
-    async fn mutate(&mut self, mu: Mutation) -> ClientResult<Assigned, Status>;
+    async fn mutate(&self, mu: Mutation) -> ClientResult<Assigned, Status>;
 
-    async fn alter(&mut self, op: Operation) -> ClientResult<Payload, Status>;
+    async fn alter(&self, op: Operation) -> ClientResult<Payload, Status>;
 
-    async fn commit_or_abort(&mut self, txn: TxnContext) -> ClientResult<TxnContext, Status>;
+    async fn commit_or_abort(&self, txn: TxnContext) -> ClientResult<TxnContext, Status>;
 
-    async fn check_version(&mut self) -> ClientResult<Version, Status>;
+    async fn check_version(&self) -> ClientResult<Version, Status>;
 }
 
 #[derive(Clone)]
@@ -96,7 +96,7 @@ impl Client {
         server_root_ca_cert: impl AsRef<Path>,
         client_cert: impl AsRef<Path>,
         client_key: impl AsRef<Path>,
-    ) -> Result<Self, Failure> {
+    ) -> Result<Self, Error> {
         let server_root_ca_cert_future = tokio::fs::read(server_root_ca_cert);
         let client_cert_future = tokio::fs::read(client_cert);
         let client_key_future = tokio::fs::read(client_key);
@@ -117,14 +117,14 @@ impl Client {
     }
 
     pub fn new_txn(&self) -> Txn {
-        Txn::new(self.clone())
+        Txn::new(&self)
     }
 }
 
 #[async_trait]
 impl IDgraphClient for Client {
     async fn login(
-        &mut self,
+        &self,
         user_id: String,
         password: String,
     ) -> ClientResult<DgraphResponse, Status> {
@@ -133,40 +133,44 @@ impl IDgraphClient for Client {
             password,
             ..Default::default()
         };
+        let mut client = self.any_client();
         let request = Request::new(login);
-        let response: Response<DgraphResponse> = self.client.login(request).await?;
+        let response: Response<DgraphResponse> = client.login(request).await?;
         Ok(response.into_inner())
     }
 
     async fn query(&self, query: DgraphRequest) -> ClientResult<DgraphResponse, Status> {
         let mut client = self.any_client();
         let request = Request::new(query);
-        let response: Response<DgraphResponse> = self.client.query(request).await?;
+        let response: Response<DgraphResponse> = client.query(request).await?;
         Ok(response.into_inner())
     }
 
     async fn mutate(&self, mu: Mutation) -> ClientResult<Assigned, Status> {
         let mut client = self.any_client();
         let request = Request::new(mu);
-        let response: Response<Assigned> = self.client.mutate(request).await?;
+        let response: Response<Assigned> = client.mutate(request).await?;
         Ok(response.into_inner())
     }
 
-    async fn alter(&mut self, op: Operation) -> ClientResult<Payload, Status> {
+    async fn alter(&self, op: Operation) -> ClientResult<Payload, Status> {
+        let mut client = self.any_client();
         let request = Request::new(op);
-        let response: Response<Payload> = self.client.alter(request).await?;
+        let response: Response<Payload> = client.alter(request).await?;
         Ok(response.into_inner())
     }
 
-    async fn commit_or_abort(&mut self, txn: TxnContext) -> ClientResult<TxnContext, Status> {
+    async fn commit_or_abort(&self, txn: TxnContext) -> ClientResult<TxnContext, Status> {
+        let mut client = self.any_client();
         let request = Request::new(txn);
-        let response: Response<TxnContext> = self.client.commit_or_abort(request).await?;
+        let response: Response<TxnContext> = client.commit_or_abort(request).await?;
         Ok(response.into_inner())
     }
 
-    async fn check_version(&mut self) -> ClientResult<Version, Status> {
+    async fn check_version(&self) -> ClientResult<Version, Status> {
+        let mut client = self.any_client();
         let request = Request::new(Check {});
-        let response: Response<Version> = self.client.check_version(request).await?;
+        let response: Response<Version> = client.check_version(request).await?;
         Ok(response.into_inner())
     }
 }
@@ -180,7 +184,7 @@ mod tests {
     #[test]
     fn alter() {
         let mut rt = Runtime::new().unwrap();
-        let mut client = rt
+        let client = rt
             .block_on(Client::new(vec!["http://127.0.0.1:19080"].into_iter()))
             .unwrap();
         let op = Operation {

@@ -20,11 +20,11 @@ pub struct Mutated {
 
 #[async_trait]
 impl IState for Mutated {
-    async fn commit_or_abort(&self, state: TxnState) -> Result<(), DgraphError> {
+    async fn commit_or_abort(&self, state: TxnState<'_>) -> Result<(), DgraphError> {
         if !self.mutated {
             return Ok(());
         }
-        let mut client = state.client;
+        let client = state.client;
         let txn = state.context;
         match client.commit_or_abort(txn).await {
             Ok(_txn_context) => Ok(()),
@@ -45,10 +45,10 @@ impl IState for Mutated {
     }
 }
 
-pub type MutatedTxn = TxnVariant<Mutated>;
+pub type MutatedTxn<'a> = TxnVariant<'a, Mutated>;
 
-impl TxnVariant<Base> {
-    pub fn mutated(self) -> MutatedTxn {
+impl<'a> TxnVariant<'a, Base> {
+    pub fn mutated(self) -> MutatedTxn<'a> {
         TxnVariant {
             state: self.state,
             extra: Mutated {
@@ -59,7 +59,7 @@ impl TxnVariant<Base> {
     }
 }
 
-impl TxnVariant<Mutated> {
+impl<'a> TxnVariant<'a, Mutated> {
     async fn do_mutation(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
         self.extra.mutated = true;
         mu.start_ts = self.context.start_ts;

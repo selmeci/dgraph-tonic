@@ -24,10 +24,10 @@ impl IState for BestEffort {
     }
 }
 
-pub type BestEffortTxn = TxnVariant<BestEffort>;
+pub type BestEffortTxn<'a> = TxnVariant<'a, BestEffort>;
 
-impl TxnVariant<ReadOnly> {
-    pub fn best_effort(self) -> BestEffortTxn {
+impl<'a> TxnVariant<'a, ReadOnly> {
+    pub fn best_effort(self) -> BestEffortTxn<'a> {
         TxnVariant {
             state: self.state,
             extra: BestEffort {

@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+
 use crate::sync_client::txn::{IState, TxnState, TxnVariant};
 use crate::sync_client::Client;
 use crate::Request;
-use std::collections::HashMap;
-use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct Base;
@@ -23,10 +24,10 @@ impl IState for Base {
     }
 }
 
-pub type Txn = TxnVariant<Base>;
+pub type Txn<'a> = TxnVariant<'a, Base>;
 
-impl TxnVariant<Base> {
-    pub fn new(client: Client) -> TxnVariant<Base> {
+impl<'a> TxnVariant<'a, Base> {
+    pub fn new(client: &'a Client) -> Txn<'a> {
         Self {
             state: Box::new(TxnState {
                 context: Default::default(),
