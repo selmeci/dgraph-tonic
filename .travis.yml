@@ -8,7 +8,7 @@ matrix:
     - name: fmt
       rust: stable
       before_install:
-        - rustup component add rustfmt
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
       script:
         - cargo fmt -- --check
     - name: Dgraph 1.0 tests
@@ -16,7 +16,6 @@ matrix:
       before_install:
         - docker-compose -f docker-compose-1-0.yaml up -d
         - docker ps
-      install:
-        - cargo build
+        - cargo fmt -- --check
       script:
         - cargo test --verbose -- --test-threads=1
