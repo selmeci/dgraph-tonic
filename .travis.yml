@@ -5,7 +5,7 @@ services:
 matrix:
   fast_finish: true
   include:
-    - name: clippy & fmt
+    - name: fmt
       rust: stable
       before_install:
         - rustup component add rustfmt
