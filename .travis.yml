@@ -3,7 +3,6 @@ rust:
   - stable
 cache: cargo
 before_install:
-  - cargo install rustup
   - rustup component add rustfmt
 script:
   - cargo build --verbose
