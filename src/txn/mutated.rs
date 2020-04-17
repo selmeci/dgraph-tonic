@@ -24,7 +24,7 @@ impl IState for Mutated {
         }
         let mut client = state.client;
         let txn = state.context;
-        match IDgraphClient::commit_or_abort(&mut client, txn).await {
+        match client.commit_or_abort(txn).await {
             Ok(_txn_context) => Ok(()),
             Err(err) => Err(DgraphError::GrpcError(err.to_string())),
         }
