@@ -6,7 +6,7 @@ edition = "2018"
 description = "A rust async client for dGraph database build with Tonic crate"
 readme = "README.md"
 license = "MIT"
-keywords = ["dgraph", "grpc", "async", "sync"]
+keywords = ["dgraph", "grpc", "async"]
 repository = "https://github.com/selmeci/dgraph-tonic"
 homepage = "https://github.com/selmeci/dgraph-tonic"
 
