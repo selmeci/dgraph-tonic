@@ -9,6 +9,9 @@ license = "MIT"
 keywords = ["dgraph", "grpc", "async"]
 repository = "https://github.com/selmeci/dgraph-tonic"
 homepage = "https://github.com/selmeci/dgraph-tonic"
+exclude = [
+    "build.rs"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
