@@ -39,7 +39,7 @@ impl IDgraphClient for Stub {
     }
 
     async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Status> {
-        let request = Request::new(mu.mu());
+        let request = Request::new(mu);
         let response: Response<Assigned> = self.client.mutate(request).await?;
         Ok(response.into_inner())
     }

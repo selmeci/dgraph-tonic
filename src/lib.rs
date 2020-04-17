@@ -1,28 +1,22 @@
 pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 use tonic::Status;
 
-use api::dgraph_client::DgraphClient;
-pub(crate) use api::Mutation as Mu;
-pub use api::{
-    Assigned, Check, LoginRequest, Operation, Payload, Request, Response, TxnContext, Version,
-};
 use async_trait::async_trait;
 
+use crate::api::dgraph_client::DgraphClient;
+pub use crate::api::{
+    Assigned, Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext,
+    Version,
+};
 pub use crate::client::Client;
 pub use crate::errors::{ClientError, DgraphError};
-pub use crate::mutation::Mutation;
 pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
 
+mod api;
 mod client;
 mod errors;
-mod mutation;
-mod response;
 mod stub;
 mod txn;
-
-mod api {
-    tonic::include_proto!("api");
-}
 
 pub type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub type Result<T, E = StdError> = ::std::result::Result<T, E>;

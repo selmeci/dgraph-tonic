@@ -1,33 +1,13 @@
-use std::ops::{Deref, DerefMut};
-
 use serde::Serialize;
 use serde_json::Error;
 
-use crate::Mu;
-
-pub struct Mutation(Mu);
-
-impl Deref for Mutation {
-    type Target = Mu;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Mutation {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
+use crate::Mutation;
 
 impl Mutation {
-    pub(crate) fn mu(self) -> Mu {
-        self.0
-    }
-
     pub fn new() -> Self {
-        Self(Mu::default())
+        Self {
+            ..Default::default()
+        }
     }
 
     pub fn with_set_json<T: ?Sized>(mut self, value: &T) -> Result<Self, Error>
