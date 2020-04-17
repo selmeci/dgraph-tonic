@@ -4,10 +4,12 @@ use std::fmt::Debug;
 
 use log::error;
 
+use async_trait::async_trait;
+
 use crate::errors::DgraphError;
-use crate::sync_client::txn::default::Base;
-use crate::sync_client::txn::{IState, TxnState, TxnVariant};
-use crate::sync_client::IDgraphClient;
+use crate::txn::default::Base;
+use crate::txn::{IState, TxnState, TxnVariant};
+use crate::IDgraphClient;
 use crate::{Assigned, Mutation, Request};
 
 #[derive(Clone, Debug)]
@@ -16,14 +18,15 @@ pub struct Mutated {
     mutated: bool,
 }
 
+#[async_trait]
 impl IState for Mutated {
-    fn commit_or_abort(&self, state: TxnState) -> Result<(), DgraphError> {
+    async fn commit_or_abort(&self, state: TxnState) -> Result<(), DgraphError> {
         if !self.mutated {
             return Ok(());
         }
-        let client = state.client;
+        let mut client = state.client;
         let txn = state.context;
-        match client.commit_or_abort(txn) {
+        match IDgraphClient::commit_or_abort(&mut client, txn).await {
             Ok(_txn_context) => Ok(()),
             Err(err) => {
                 error!("Cannot commit mutated transaction. err: {:?}", err);
@@ -42,10 +45,10 @@ impl IState for Mutated {
     }
 }
 
-pub type MutatedTxn<'a> = TxnVariant<'a, Mutated>;
+pub type MutatedTxn = TxnVariant<Mutated>;
 
-impl<'a> TxnVariant<'a, Base> {
-    pub fn mutated(self) -> MutatedTxn<'a> {
+impl TxnVariant<Base> {
+    pub fn mutated(self) -> MutatedTxn {
         TxnVariant {
             state: self.state,
             extra: Mutated {
@@ -56,11 +59,11 @@ impl<'a> TxnVariant<'a, Base> {
     }
 }
 
-impl<'a> TxnVariant<'a, Mutated> {
-    fn do_mutation(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
+impl TxnVariant<Mutated> {
+    async fn do_mutation(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
         self.extra.mutated = true;
         mu.start_ts = self.context.start_ts;
-        let assigned = match self.client.mutate(mu) {
+        let assigned = match IDgraphClient::mutate(&mut self.client, mu).await {
             Ok(assigned) => assigned,
             Err(err) => {
                 error!("Cannot mutate transaction. err: {:?}", err);
@@ -74,17 +77,20 @@ impl<'a> TxnVariant<'a, Mutated> {
         Ok(assigned)
     }
 
-    pub fn mutate(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
+    pub async fn mutate(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
         mu.commit_now = false;
-        self.do_mutation(mu)
+        self.do_mutation(mu).await
     }
 
-    pub fn mutate_and_commit_now(mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
+    pub async fn mutate_and_commit_now(
+        mut self,
+        mut mu: Mutation,
+    ) -> Result<Assigned, DgraphError> {
         mu.commit_now = true;
-        self.do_mutation(mu)
+        self.do_mutation(mu).await
     }
 
-    pub fn commit(self) -> Result<(), DgraphError> {
-        self.commit_or_abort()
+    pub async fn commit(self) -> Result<(), DgraphError> {
+        self.commit_or_abort().await
     }
 }

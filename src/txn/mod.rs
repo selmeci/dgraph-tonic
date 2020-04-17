@@ -1,17 +1,19 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
 
 use log::error;
 
+use async_trait::async_trait;
+
 use crate::errors::DgraphError;
-pub use crate::sync_client::txn::best_effort::BestEffortTxn;
-pub use crate::sync_client::txn::default::Txn;
-pub use crate::sync_client::txn::mutated::MutatedTxn;
-pub use crate::sync_client::txn::read_only::ReadOnlyTxn;
-use crate::sync_client::{Client, IDgraphClient};
+use crate::stub::Stub;
+pub use crate::txn::best_effort::BestEffortTxn;
+pub use crate::txn::default::Txn;
+pub use crate::txn::mutated::MutatedTxn;
+pub use crate::txn::read_only::ReadOnlyTxn;
+use crate::IDgraphClient;
 use crate::{Request, Response, TxnContext};
 
 mod best_effort;
@@ -19,15 +21,15 @@ mod default;
 mod mutated;
 mod read_only;
 
-#[derive(Clone, Debug)]
-pub struct TxnState<'a> {
-    client: &'a Client,
+#[derive(Clone)]
+pub struct TxnState {
+    client: Stub,
     context: TxnContext,
 }
 
-pub trait IState {
-    fn commit_or_abort(&self, state: TxnState<'_>) -> Result<(), DgraphError> {
-        let _ = state;
+#[async_trait]
+pub trait IState: Send + Sync + Clone {
+    async fn commit_or_abort(&self, _state: TxnState) -> Result<(), DgraphError> {
         Ok(())
     }
 
@@ -40,45 +42,46 @@ pub trait IState {
 }
 
 #[derive(Clone)]
-pub struct TxnVariant<'a, S: IState + Debug + Send + Sync + Clone> {
-    state: Box<TxnState<'a>>,
+pub struct TxnVariant<S: IState> {
+    state: Box<TxnState>,
     extra: S,
 }
 
-impl<'a, S: IState + Debug + Send + Sync + Clone> Deref for TxnVariant<'a, S> {
-    type Target = Box<TxnState<'a>>;
+impl<S: IState> Deref for TxnVariant<S> {
+    type Target = Box<TxnState>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
     }
 }
 
-impl<'a, S: IState + Debug + Send + Sync + Clone> DerefMut for TxnVariant<'a, S> {
+impl<S: IState> DerefMut for TxnVariant<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<'a, S: IState + Debug + Send + Sync + Clone> TxnVariant<'a, S> {
-    fn commit_or_abort(self) -> Result<(), DgraphError> {
+impl<S: IState> TxnVariant<S> {
+    async fn commit_or_abort(self) -> Result<(), DgraphError> {
         let extra = self.extra;
         let state = *self.state;
-        extra.commit_or_abort(state)
+        extra.commit_or_abort(state).await
     }
 
-    pub fn discard(mut self) -> Result<(), DgraphError> {
+    pub async fn discard(mut self) -> Result<(), DgraphError> {
         self.context.aborted = true;
-        self.commit_or_abort()
+        self.commit_or_abort().await
     }
 
-    pub fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
     {
         self.query_with_vars(query, HashMap::<String, _, _>::new())
+            .await
     }
 
-    pub fn query_with_vars<Q, K>(
+    pub async fn query_with_vars<Q, K>(
         &mut self,
         query: Q,
         vars: HashMap<K, Q>,
@@ -92,7 +95,7 @@ impl<'a, S: IState + Debug + Send + Sync + Clone> TxnVariant<'a, S> {
             tmp
         });
         let request = self.extra.query_request(&self.state, query.into(), vars);
-        let response = match self.client.query(request) {
+        let response = match IDgraphClient::query(&mut self.client, request).await {
             Ok(response) => response,
             Err(err) => {
                 error!("Cannot query dGraph. err: {:?}", err);
@@ -110,11 +113,8 @@ impl<'a, S: IState + Debug + Send + Sync + Clone> TxnVariant<'a, S> {
 #[cfg(test)]
 mod tests {
     use serde_derive::{Deserialize, Serialize};
-    use serde_json;
 
-    use crate::Mutation;
-
-    use super::*;
+    use crate::{Client, Mutation};
 
     #[derive(Serialize, Deserialize, Default, Debug)]
     struct Person {
@@ -132,68 +132,56 @@ mod tests {
         pub uid: String,
     }
 
-    #[test]
-    fn mutate_and_commit_now() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"].into_iter()).unwrap();
+    #[tokio::test]
+    async fn mutate_and_commit_now() {
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
         let txn = client.new_txn().mutated();
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
         };
-        let pb = serde_json::to_vec(&p).expect("Invalid json");
-        let mu = Mutation {
-            set_json: pb,
-            ..Default::default()
-        };
-        let response = txn.mutate_and_commit_now(mu);
+        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate_and_commit_now(mu).await;
         assert!(response.is_ok());
     }
 
-    #[test]
-    fn commit() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"].into_iter()).unwrap();
+    #[tokio::test]
+    async fn commit() {
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_txn().mutated();
         //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
         };
-        let pb = serde_json::to_vec(&p).expect("Invalid json");
-        let mu = Mutation {
-            set_json: pb,
-            ..Default::default()
-        };
-        let response = txn.mutate(mu);
+        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
         assert!(response.is_ok());
         //second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
         };
-        let pb = serde_json::to_vec(&p).expect("Invalid json");
-        let mu = Mutation {
-            set_json: pb,
-            ..Default::default()
-        };
-        let response = txn.mutate(mu);
+        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
         assert!(response.is_ok());
         //commit
-        let commit = txn.commit();
+        let commit = txn.commit().await;
         assert!(commit.is_ok())
     }
 
-    #[test]
-    fn query() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"].into_iter()).unwrap();
+    #[tokio::test]
+    async fn query() {
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_txn().read_only();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
                 uid
             }
         }"#;
-        let response = txn.query(query);
+        let response = txn.query(query).await;
         assert!(response.is_ok());
-        let json: UidJson = serde_json::from_slice(&response.unwrap().json).unwrap();
+        let json: UidJson = response.unwrap().try_into().unwrap();
         assert_eq!(json.uids[0].uid, "0x1");
     }
 }
