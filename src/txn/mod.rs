@@ -3,8 +3,6 @@ use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
 
-use log::error;
-
 use async_trait::async_trait;
 
 use crate::errors::DgraphError;
@@ -98,7 +96,6 @@ impl<S: IState> TxnVariant<S> {
         let response = match IDgraphClient::query(&mut self.client, request).await {
             Ok(response) => response,
             Err(err) => {
-                error!("Cannot query dGraph. err: {:?}", err);
                 return Err(DgraphError::GrpcError(err.to_string()));
             }
         };

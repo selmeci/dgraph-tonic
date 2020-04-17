@@ -2,8 +2,6 @@ use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use log::error;
-
 use async_trait::async_trait;
 
 use crate::errors::DgraphError;
@@ -28,10 +26,7 @@ impl IState for Mutated {
         let txn = state.context;
         match IDgraphClient::commit_or_abort(&mut client, txn).await {
             Ok(_txn_context) => Ok(()),
-            Err(err) => {
-                error!("Cannot commit mutated transaction. err: {:?}", err);
-                Err(DgraphError::GrpcError(err.to_string()))
-            }
+            Err(err) => Err(DgraphError::GrpcError(err.to_string())),
         }
     }
 
@@ -66,7 +61,6 @@ impl TxnVariant<Mutated> {
         let assigned = match IDgraphClient::mutate(&mut self.client, mu).await {
             Ok(assigned) => assigned,
             Err(err) => {
-                error!("Cannot mutate transaction. err: {:?}", err);
                 return Err(DgraphError::GrpcError(err.to_string()));
             }
         };
