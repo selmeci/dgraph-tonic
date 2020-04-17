@@ -10,7 +10,7 @@ use async_trait::async_trait;
 
 pub use crate::client::Client;
 pub use crate::errors::{ClientError, DgraphError};
-use crate::mutation::Mutation;
+pub use crate::mutation::Mutation;
 pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
 
 mod client;
