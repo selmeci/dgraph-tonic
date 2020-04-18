@@ -1,6 +1,7 @@
 # A async rust client for dgraph
 
 [![Build Status](https://travis-ci.org/selmeci/dgraph-tonic.svg?branch=master)](https://travis-ci.org/selmeci/dgraph-tonic)
+[![Latest Version](https://img.shields.io/crates/v/dgraph-tonic.svg)](https://crates.io/crates/dgraph-tonic)
 
 dGraph async Rust client which communicates with the server using [gRPC](https://grpc.io/)  build with [Tonic](https://github.com/hyperium/tonic).
 
@@ -61,8 +62,7 @@ All certs must be in `PEM` format.
 
 ### Alter the database
 
-To set the schema, create an instance of `dgraph::Operation` and use the
-`Alter` endpoint.
+To set the schema, create an instance of `dgraph::Operation` and use the `Alter` endpoint.
 
 ```rust
 let op = Operation {
@@ -78,12 +78,12 @@ let response = client.alter(op).await?;
 
 Transaction is modeled with [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/). The typestate pattern is an API design pattern that encodes information about an object's run-time state in its compile-time type. This principle allows us to identify some type of errors, like mutation in read only transaction, during compilation. Transaction types are:
 
-- *Default*: can be transformed into ReadOnly, BestEffort, Muated. Can permorm `discard`, `query` and `query_with_vars` actions.
-- *ReadOnly*: useful to increase read speed because they can circumvent the usual consensus protocol. Can performs same actions as default txn.
-- *BestEffort*: Read-only queries can optionally be set as best-effort. Using this flag will ask the Dgraph Alpha to try to get timestamps from memory on a best-effort basis to reduce the number of outbound requests to Zero. This may yield improved latencies in read-bound workloads where linearizable reads are not strictly needed. Can performs same actions as default txn.
-- *Mutated*: can performs all actions as default transaction and also alow to modify data in DB. Can be create only from default transaction.
+- *Default*: can be transformed into ReadOnly, BestEffort, Muated. Can perform `query` and `query_with_vars` actions.
+- *ReadOnly*: useful to increase read speed because they can circumvent the usual consensus protocol. Can perform `query` and `query_with_vars` actions.
+- *BestEffort*: Read-only queries can optionally be set as best-effort. Using this flag will ask the Dgraph Alpha to try to get timestamps from memory on a best-effort basis to reduce the number of outbound requests to Zero. This may yield improved latencies in read-bound workloads where linearizable reads are not strictly needed. Can permorm `query` and `query_with_vars` actions.
+- *Mutated*: can perform all actions as default transaction and can modify data in DB. Can be created only from default transaction.
 
-To create a default transaction, call `client.new_txn()`, which returns a `Txn` object. This operation incurs no network overhead.
+Client provides several factory methods for transactions. Create new transaction incurs no network overhead.
 
 ```rust
 let txn = client.new_txn();
@@ -92,13 +92,13 @@ let best_effort = txn.best_effort();
 let mutated = txn.mutated();
 ```
 
-Only for Mutated transaction must be alway called `dicard().await?` or `commit().await?` function before txn variable drop.
+Only for Mutated transaction must be always called `txn.dicard().await?` or `txn.commit().await?` function before txn variable is dropped.
 
 ### Run a mutation
 
-`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exists helper functions for JSON format (`with_set_json(), with_delete_json()`)
+`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exist helper functions for JSON format (`mu.with_set_json(), mu.with_delete_json()`)
 
-We define a Person struct to represent a Person and marshal an instance of it to use with `Mutation` object.
+Example:
 
 ```rust
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -118,7 +118,7 @@ let txn = client.new_mutated_txn();
 let assigned = txn.mutate(mu).await.expect("failed to create data");
 ```
 
-Sometimes, you only want to commit a mutation, without querying anything further. In such cases, you can use `txn.mutate_and_commit_now(mu)` to indicate that the mutation must be immediately committed. Txn object is also consumed in this case.
+Sometimes, you only want to commit a mutation, without querying anything further. In such cases, you can use `txn.mutate_and_commit_now(mu)` to indicate that the mutation must be immediately committed. Txn object is being consumed in this case.
 
 ### Run a query
 
@@ -140,16 +140,16 @@ let q = r#"query all($a: string) {
   }"#;
 
 let mut vars = HashMap::new();
-vars.insert("$a", "Alice";
+vars.insert("$a", "Alice");
 
 let resp = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
 let persons: Persons = resp.try_into().except("Persons");
-println!("Persons: {:#?}", persons);
+println!("Persons: {:?}", persons);
 ```
 
 ### Commit a transaction
 
-A transaction can be committed using the `txn.commit()` method. If your transaction consisted solely of calls to `txn.query` or `txn.query_with_vars`, and no calls to `txn.mutate`, then calling `txn.commit` is not necessary.
+A mutated transaction can be committed using the `txn.commit()` method. If your transaction consisted solely of calls to `txn.query` or `txn.query_with_vars`, and no calls to `txn.mutate`, then calling `txn.commit` is not necessary.
 
 An error will be returned if other transactions running concurrently modify the same data that was modified in this transaction. It is up to the user to retry transactions when they fail.
 
@@ -171,7 +171,7 @@ Tests require Dgraph running on `localhost:19080`. For the convenience there are
 docker-compose -f docker-compose-1-X.yaml up -d
 ```
 
-Since we are working with database, tests also need to be run in a single thread to prevent aborts.
+Since we are working with a database, tests also need to be run in a single thread to prevent aborts.
 
 ```bash
 cargo test -- --test-threads=1
