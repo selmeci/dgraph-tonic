@@ -27,10 +27,6 @@ pub struct TxnState {
 
 #[async_trait]
 pub trait IState: Send + Sync + Clone {
-    async fn commit_or_abort(&self, _state: TxnState) -> Result<(), DgraphError> {
-        Ok(())
-    }
-
     fn query_request(
         &self,
         state: &TxnState,
@@ -60,17 +56,6 @@ impl<S: IState> DerefMut for TxnVariant<S> {
 }
 
 impl<S: IState> TxnVariant<S> {
-    async fn commit_or_abort(self) -> Result<(), DgraphError> {
-        let extra = self.extra;
-        let state = *self.state;
-        extra.commit_or_abort(state).await
-    }
-
-    pub async fn discard(mut self) -> Result<(), DgraphError> {
-        self.context.aborted = true;
-        self.commit_or_abort().await
-    }
-
     pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,

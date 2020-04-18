@@ -14,7 +14,6 @@ pub struct Request {
     #[prost(bool, tag = "16")]
     pub best_effort: bool,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
     #[prost(bytes, tag = "1")]
@@ -26,7 +25,6 @@ pub struct Response {
     #[prost(message, optional, tag = "12")]
     pub latency: ::std::option::Option<Latency>,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Assigned {
     #[prost(map = "string, string", tag = "1")]
@@ -36,7 +34,6 @@ pub struct Assigned {
     #[prost(message, optional, tag = "12")]
     pub latency: ::std::option::Option<Latency>,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Mutation {
     #[prost(bytes, tag = "1")]
@@ -63,7 +60,6 @@ pub struct Mutation {
     #[prost(bool, tag = "15")]
     pub ignore_index_conflict: bool,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Operation {
     #[prost(string, tag = "1")]
@@ -79,7 +75,6 @@ pub struct Operation {
     #[prost(string, tag = "5")]
     pub drop_value: std::string::String,
 }
-
 pub mod operation {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -91,14 +86,12 @@ pub mod operation {
         Type = 4,
     }
 }
-
 /// Worker services.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Payload {
     #[prost(bytes, tag = "1")]
     pub data: std::vec::Vec<u8>,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxnContext {
     #[prost(uint64, tag = "1")]
@@ -116,16 +109,13 @@ pub struct TxnContext {
     #[prost(message, optional, tag = "13")]
     pub lin_read: ::std::option::Option<LinRead>,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Check {}
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(string, tag = "1")]
     pub tag: std::string::String,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinRead {
     #[prost(map = "uint32, uint64", tag = "1")]
@@ -133,7 +123,6 @@ pub struct LinRead {
     #[prost(enumeration = "lin_read::Sequencing", tag = "2")]
     pub sequencing: i32,
 }
-
 pub mod lin_read {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -142,7 +131,6 @@ pub mod lin_read {
         ServerSide = 1,
     }
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Latency {
     #[prost(uint64, tag = "1")]
@@ -154,7 +142,6 @@ pub struct Latency {
     #[prost(uint64, tag = "4")]
     pub assign_timestamp_ns: u64,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NQuad {
     #[prost(string, tag = "1")]
@@ -172,13 +159,11 @@ pub struct NQuad {
     #[prost(message, repeated, tag = "7")]
     pub facets: ::std::vec::Vec<Facet>,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
     #[prost(oneof = "value::Val", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
     pub val: ::std::option::Option<value::Val>,
 }
-
 pub mod value {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Val {
@@ -207,7 +192,6 @@ pub mod value {
         UidVal(u64),
     }
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Facet {
     #[prost(string, tag = "1")]
@@ -223,7 +207,6 @@ pub struct Facet {
     #[prost(string, tag = "5")]
     pub alias: std::string::String,
 }
-
 pub mod facet {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -235,7 +218,6 @@ pub mod facet {
         Datetime = 4,
     }
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaNode {
     #[prost(string, tag = "1")]
@@ -257,7 +239,6 @@ pub struct SchemaNode {
     #[prost(bool, tag = "9")]
     pub lang: bool,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
     #[prost(string, tag = "1")]
@@ -267,7 +248,6 @@ pub struct LoginRequest {
     #[prost(string, tag = "3")]
     pub refresh_token: std::string::String,
 }
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Jwt {
     #[prost(string, tag = "1")]
@@ -275,7 +255,6 @@ pub struct Jwt {
     #[prost(string, tag = "2")]
     pub refresh_jwt: std::string::String,
 }
-
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs)]
@@ -286,7 +265,6 @@ pub mod dgraph_client {
     pub struct DgraphClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-
     impl DgraphClient<tonic::transport::Channel> {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
@@ -298,7 +276,6 @@ pub mod dgraph_client {
             Ok(Self::new(conn))
         }
     }
-
     impl<T> DgraphClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
@@ -399,7 +376,6 @@ pub mod dgraph_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-
     impl<T: Clone> Clone for DgraphClient<T> {
         fn clone(&self) -> Self {
             Self {
@@ -407,7 +383,6 @@ pub mod dgraph_client {
             }
         }
     }
-
     impl<T> std::fmt::Debug for DgraphClient<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "DgraphClient {{ ... }}")

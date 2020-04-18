@@ -18,18 +18,6 @@ pub struct Mutated {
 
 #[async_trait]
 impl IState for Mutated {
-    async fn commit_or_abort(&self, state: TxnState) -> Result<(), DgraphError> {
-        if !self.mutated {
-            return Ok(());
-        }
-        let mut client = state.client;
-        let txn = state.context;
-        match client.commit_or_abort(txn).await {
-            Ok(_txn_context) => Ok(()),
-            Err(err) => Err(DgraphError::GrpcError(err.to_string())),
-        }
-    }
-
     fn query_request(
         &self,
         state: &TxnState,
@@ -69,6 +57,25 @@ impl TxnVariant<Mutated> {
             None => return Err(DgraphError::MissingTxnContext),
         }
         Ok(assigned)
+    }
+
+    async fn commit_or_abort(self) -> Result<(), DgraphError> {
+        let extra = self.extra;
+        let state = *self.state;
+        if !extra.mutated {
+            return Ok(());
+        };
+        let mut client = state.client;
+        let txn = state.context;
+        match client.commit_or_abort(txn).await {
+            Ok(_txn_context) => Ok(()),
+            Err(err) => Err(DgraphError::GrpcError(err.to_string())),
+        }
+    }
+
+    pub async fn discard(mut self) -> Result<(), DgraphError> {
+        self.context.aborted = true;
+        self.commit_or_abort().await
     }
 
     pub async fn mutate(&mut self, mut mu: Mutation) -> Result<Assigned, DgraphError> {
