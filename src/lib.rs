@@ -1,3 +1,5 @@
+extern crate cfg_if;
+
 pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
 use crate::api::dgraph_client::DgraphClient;
