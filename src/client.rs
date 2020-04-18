@@ -104,6 +104,13 @@ impl Client {
     }
 
     ///
+    /// Return transaction which can only queries in best effort mode
+    ///
+    pub fn new_best_effort_txn(&self) -> BestEffortTxn {
+        self.new_read_only_txn().best_effort()
+    }
+
+    ///
     /// Return transaction which can performs mutate, commit and discard
     ///
     pub fn new_mutated_txn(&self) -> MutatedTxn {
