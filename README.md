@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/selmeci/dgraph-tonic.svg?branch=master)](https://travis-ci.org/selmeci/dgraph-tonic)
 [![Latest Version](https://img.shields.io/crates/v/dgraph-tonic.svg)](https://crates.io/crates/dgraph-tonic)
+[![Docs](https://docs.rs/dgraph-tonic/badge.svg)](https://docs.rs/dgraph-tonic)
 
 dGraph async Rust client which communicates with the server using [gRPC](https://grpc.io/)  build with [Tonic](https://github.com/hyperium/tonic).
 
