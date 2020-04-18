@@ -60,18 +60,19 @@ impl<S: IState> TxnVariant<S> {
     where
         Q: Into<String> + Send + Sync,
     {
-        self.query_with_vars(query, HashMap::<String, _, _>::new())
+        self.query_with_vars(query, HashMap::<String, String, _>::new())
             .await
     }
 
-    pub async fn query_with_vars<Q, K>(
+    pub async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
-        vars: HashMap<K, Q>,
+        vars: HashMap<K, V>,
     ) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
     {
         let vars = vars.into_iter().fold(HashMap::new(), |mut tmp, (k, v)| {
             tmp.insert(k.into(), v.into());
@@ -94,6 +95,8 @@ impl<S: IState> TxnVariant<S> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use serde_derive::{Deserialize, Serialize};
 
     use crate::{Client, Mutation};
@@ -117,7 +120,7 @@ mod tests {
     #[tokio::test]
     async fn mutate_and_commit_now() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let txn = client.new_txn().mutated();
+        let txn = client.new_mutated_txn();
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -130,7 +133,7 @@ mod tests {
     #[tokio::test]
     async fn commit() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_txn().mutated();
+        let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
@@ -155,13 +158,30 @@ mod tests {
     #[tokio::test]
     async fn query() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_txn().read_only();
+        let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
                 uid
             }
         }"#;
         let response = txn.query(query).await;
+        assert!(response.is_ok());
+        let json: UidJson = response.unwrap().try_into().unwrap();
+        assert_eq!(json.uids[0].uid, "0x1");
+    }
+
+    #[tokio::test]
+    async fn query_with_vars() {
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let mut txn = client.new_read_only_txn();
+        let query = r#"query all($a: string) {
+            uids(func: eq(name, $a)) {
+              uid
+            }
+          }"#;
+        let mut vars = HashMap::new();
+        vars.insert("$a", "Alice");
+        let response = txn.query_with_vars(query, vars).await;
         assert!(response.is_ok());
         let json: UidJson = response.unwrap().try_into().unwrap();
         assert_eq!(json.uids[0].uid, "0x1");
