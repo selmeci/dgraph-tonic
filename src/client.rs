@@ -9,7 +9,7 @@ use tonic::Status;
 
 use crate::errors::ClientError;
 use crate::stub::Stub;
-use crate::{DgraphClient, IDgraphClient, Operation, Payload, Result, Txn};
+use crate::{DgraphClient, IDgraphClient, MutatedTxn, Operation, Payload, Result, Txn};
 
 #[derive(Clone)]
 pub struct Client {
@@ -86,8 +86,18 @@ impl Client {
         Ok(Self { stubs })
     }
 
+    ///
+    /// Return transaction in default state, which can be specialized into ReadOnly or Mutated
+    ///
     pub fn new_txn(&self) -> Txn {
         Txn::new(self.any_client())
+    }
+
+    ///
+    /// Return transaction which can performs mutate, commit and discard
+    ///
+    pub fn new_mutated_txn(&self) -> MutatedTxn {
+        self.new_txn().mutated()
     }
 
     pub async fn alter(&self, op: Operation) -> Result<Payload, Status> {
