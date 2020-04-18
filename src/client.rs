@@ -9,7 +9,10 @@ use tonic::Status;
 
 use crate::errors::ClientError;
 use crate::stub::Stub;
-use crate::{DgraphClient, IDgraphClient, MutatedTxn, Operation, Payload, Result, Txn};
+use crate::{
+    BestEffortTxn, DgraphClient, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn,
+    Result, Txn,
+};
 
 #[derive(Clone)]
 pub struct Client {
@@ -91,6 +94,13 @@ impl Client {
     ///
     pub fn new_txn(&self) -> Txn {
         Txn::new(self.any_client())
+    }
+
+    ///
+    /// Return transaction which can only queries
+    ///
+    pub fn new_read_only_txn(&self) -> ReadOnlyTxn {
+        self.new_txn().read_only()
     }
 
     ///
