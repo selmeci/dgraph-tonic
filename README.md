@@ -215,7 +215,7 @@ mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
 
 let mut txn = client.new_mutated_txn();
 // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-let response = txn.upsert(mu).await.expect("failed to upsert data");
+let response = txn.upsert(q, mu).await.expect("failed to upsert data");
 
 ```
 
@@ -240,7 +240,7 @@ mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
 mu.set_cond("@if(eq(len(user), 1))");
 
 let mut txn = client.new_mutated_txn();
-let response = txn.upsert(mu).await.expect("failed to upsert data");
+let response = txn.upsert(q, vec![mu]).await.expect("failed to upsert data");
 ```
 
 ### Commit a transaction
