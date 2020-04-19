@@ -126,7 +126,8 @@ let p = Person {
   name: "Alice".into(),
 };
 
-let mu = Mutation::new().with_set_json(&p)?;
+let mut mu = Mutation::new();
+mu.set_json(&p)?;
 
 let txn = client.new_mutated_txn();
 let assigned = txn.mutate(mu).await.expect("failed to create data");
