@@ -23,6 +23,8 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
   - [Create a transaction](#create-a-transaction)
   - [Run a mutation](#run-a-mutation)
   - [Run a query](#run-a-query)
+  - [Running an Upsert: Query + Mutation](#running-an-upsert-query--mutation)
+  - [Running a Conditional Upsert](#running-a-conditional-upsert)
   - [Commit a transaction](#commit-a-transaction)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
@@ -109,7 +111,7 @@ Only for Mutated transaction must be always called `txn.dicard().await?` or `txn
 
 ### Run a mutation
 
-`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exist helper functions for JSON format (`mu.with_set_json(), mu.with_delete_json()`)
+`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exist helper functions for JSON format (`mu.set_set_json(), mu.set_delete_json()`)
 
 Example:
 
@@ -126,13 +128,17 @@ let p = Person {
 };
 
 let mut mu = Mutation::new();
-mu.set_json(&p)?;
+mu.set_set_json(&p)?;
 
-let txn = client.new_mutated_txn();
+let mut txn = client.new_mutated_txn();
 let assigned = txn.mutate(mu).await.expect("failed to create data");
 ```
 
+Note: Only API breakage from *dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
+
 Sometimes, you only want to commit a mutation, without querying anything further. In such cases, you can use `txn.mutate_and_commit_now(mu)` to indicate that the mutation must be immediately committed. Txn object is being consumed in this case.
+
+`Mutation::with_ignored_index_conflict()` can be applied on a `Mutation` object to not run conflict detection over the index, which would decrease the number of transaction conflicts and aborts. However, this would come at the cost of potentially inconsistent upsert operations. This flag is avaliable only in *dgraph-1-0*.
 
 ### Run a query
 
@@ -140,8 +146,20 @@ You can run a query by calling `txn.query(q)`. You will need to pass in a GraphQ
 
 Let's run the following query with a variable \$a:
 
+```console
+query all($a: string) {
+  all(func: eq(name, $a))
+  {
+    uid
+    name
+  }
+}
+```
+
+`Response` provides function `try_into()` which can be used for transforming returned JSON into coresponding struct object which implements serde `Deserialize` traits.
+
 ```rust
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Deserialize, Debug)]
 struct Persons {
   all: Vec<Person>
 }
@@ -156,9 +174,55 @@ let q = r#"query all($a: string) {
 let mut vars = HashMap::new();
 vars.insert("$a", "Alice");
 
-let resp = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
+let resp: Response = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
 let persons: Persons = resp.try_into().except("Persons");
 println!("Persons: {:?}", persons);
+```
+
+### Running an Upsert: Query + Mutation
+
+Avaibale since `dgraph-1-1`.
+
+The `txn.query_and_mutate(query, mutation)` function allows you to run upserts consisting of one query and one mutation. Query variables could be defined with `txn.query_with_vars_and_mutate(query, vars, mutation)` function and can then be used in the mutation. If now futher operations with transaction is required `*_and_commit_now()` variant of functions should be used (transaction is consumed in this case).
+
+To know more about upsert, we highly recommend going through the docs at https://docs.dgraph.io/mutations/#upsert-block.
+
+```rust
+let q = r#"
+  query {
+      user as var(func: eq(email, "wrong_email@dgraph.io"))
+  }"#;
+
+let mut mu = Mutation::new();
+mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+
+let mut txn = client.new_mutated_txn();
+// Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+let response = txn.query_and_mutate_and_commit_now(mu).await.expect("failed to upsert data");
+
+```
+
+### Running a Conditional Upsert
+
+Avaibale since `dgraph-1-1`.
+
+The upsert block allows specifying a conditional mutation block using an `@if` directive. The mutation is executed only when the specified condition is true. If the condition is false, the mutation is silently ignored.
+
+See more about Conditional Upsert [Here](https://docs.dgraph.io/mutations/#conditional-upsert).
+
+```rust
+let q = r#"
+  query {
+      user as var(func: eq(email, "wrong_email@dgraph.io"))
+  }"#;
+
+let mut mu = Mutation::new();
+mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+mu.set_cond("@if(eq(len(user), 1))");
+
+let mut txn = client.new_mutated_txn();
+let response = txn.query_and_mutate(mu).await.expect("failed to upsert data");
+txn.commit().await?;
 ```
 
 ### Commit a transaction
@@ -168,7 +232,7 @@ A mutated transaction can be committed using the `txn.commit()` method. If your 
 An error will be returned if other transactions running concurrently modify the same data that was modified in this transaction. It is up to the user to retry transactions when they fail.
 
 ```rust
-let txn = client.new_mutated_txn();
+let mut txn = client.new_mutated_txn();
 // Perform some queries and mutations.
 
 let res = txn.commit().await;
