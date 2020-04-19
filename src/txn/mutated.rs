@@ -349,10 +349,8 @@ impl TxnVariant<Mutated> {
     /// async fn main() {
     ///     let q = r#"
     ///         query {
-    ///             user as var(func: eq(email, $email))
+    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
     ///         }"#;
-    ///     let mut vars = HashMap::new();
-    ///     vars.insert("$email","wrong_email@dgraph.io");
     ///
     ///     let mut mu_1 = Mutation::new();
     ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
@@ -410,7 +408,7 @@ impl TxnVariant<Mutated> {
     /// #[tokio::main]
     /// async fn main() {
     ///     let q = r#"
-    ///         query alices($email: string) { {
+    ///         query users($email: string) {
     ///             user as var(func: eq(email, $email))
     ///         }"#;
     ///     let mut vars = HashMap::new();
@@ -439,7 +437,7 @@ impl TxnVariant<Mutated> {
     /// #[tokio::main]
     /// async fn main() {
     ///     let q = r#"
-    ///         query {
+    ///         query users($email: string) {
     ///             user as var(func: eq(email, $email))
     ///         }"#;
     ///     let mut vars = HashMap::new();
