@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate serde_derive;
-
 pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
 use crate::api::dgraph_client::DgraphClient;
