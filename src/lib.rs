@@ -9,7 +9,7 @@ pub use crate::api::{
 };
 pub use crate::client::Client;
 pub use crate::errors::{ClientError, DgraphError};
-pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
+pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn, TxnState, TxnVariant};
 
 mod api;
 mod client;
