@@ -372,13 +372,8 @@ impl TxnVariant<Mutated> {
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation>,
     {
-        self.do_mutation(
-            query,
-            HashMap::<String, String>::with_capacity(0),
-            mu,
-            false,
-        )
-        .await
+        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu, true)
+            .await
     }
 
     ///
