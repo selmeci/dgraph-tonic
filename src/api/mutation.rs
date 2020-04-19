@@ -30,6 +30,7 @@ impl Mutation {
     /// let mut mu = Mutation::new().with_ignored_index_conflict();
     /// ```
     ///
+    #[cfg(feature = "dgraph-1-0")]
     pub fn with_ignored_index_conflict(mut self) -> Self {
         self.ignore_index_conflict = true;
         self
@@ -150,5 +151,24 @@ impl Mutation {
     pub fn set_delete_nquads<S: Into<String>>(&mut self, nquads: S) {
         let n_quads: String = nquads.into();
         self.del_nquads = n_quads.as_bytes().to_vec();
+    }
+
+    ///
+    /// Set set condition in Mutation.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - set nquads
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut mu = Mutation::new();
+    /// //remove name predicate
+    /// mu.set_cond("@if(eq(len(user), 1))");
+    /// ```
+    ///
+    pub fn set_cond<S: Into<String>>(&mut self, cond: S) {
+        self.cond = cond.into();
     }
 }

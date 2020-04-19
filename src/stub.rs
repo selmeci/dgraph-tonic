@@ -3,9 +3,11 @@ use tonic::{Request, Response, Status};
 
 use async_trait::async_trait;
 
+#[cfg(feature = "dgraph-1-0")]
+use crate::{Assigned, Mutation};
 use crate::{
-    Assigned, Check, DgraphClient, IDgraphClient, LoginRequest, Mutation, Operation, Payload,
-    Request as DgraphRequest, Response as DgraphResponse, Result, TxnContext, Version,
+    Check, DgraphClient, IDgraphClient, LoginRequest, Operation, Payload, Request as DgraphRequest,
+    Response as DgraphResponse, Result, TxnContext, Version,
 };
 
 #[derive(Clone)]
@@ -38,9 +40,17 @@ impl IDgraphClient for Stub {
         Ok(response.into_inner())
     }
 
+    #[cfg(feature = "dgraph-1-0")]
     async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Status> {
         let request = Request::new(mu);
         let response: Response<Assigned> = self.client.mutate(request).await?;
+        Ok(response.into_inner())
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse, Status> {
+        let request = Request::new(req);
+        let response: Response<DgraphResponse> = self.client.query(request).await?;
         Ok(response.into_inner())
     }
 

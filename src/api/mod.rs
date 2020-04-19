@@ -2,21 +2,16 @@ use tonic::Status;
 
 use async_trait::async_trait;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "dgraph-1-0")] {
-        mod v1_0_x;
-
-        pub use crate::api::v1_0_x::*;
-    } else if #[cfg(feature = "dgraph-1-1")] {
-        mod v1_1_x;
-
-        pub use crate::api::v1_1_x::*;
-    }
-}
+#[cfg(feature = "dgraph-1-0")]
+pub use crate::api::v1_0_x::*;
+#[cfg(feature = "dgraph-1-1")]
+pub use crate::api::v1_1_x::*;
 
 mod mutation;
 mod response;
 mod txn_context;
+mod v1_0_x;
+mod v1_1_x;
 
 #[async_trait]
 pub(crate) trait IDgraphClient: Clone + Sized {
@@ -24,7 +19,11 @@ pub(crate) trait IDgraphClient: Clone + Sized {
 
     async fn query(&mut self, query: Request) -> Result<Response, Status>;
 
+    #[cfg(feature = "dgraph-1-0")]
     async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Status>;
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn do_request(&mut self, req: Request) -> Result<Response, Status>;
 
     async fn alter(&mut self, op: Operation) -> Result<Payload, Status>;
 
