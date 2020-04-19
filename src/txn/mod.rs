@@ -108,8 +108,8 @@ impl<S: IState> TxnVariant<S> {
     ///   }"#;
     ///
     ///   let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    ///   let resp: Response = client.new_readonly_txn().query(q).await.expect("Query response");
-    ///   let persons: Persons = resp.try_into().except("Persons");
+    ///   let resp: Response = client.new_read_only_txn().query(q).await.expect("Query response");
+    ///   let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```
     ///
