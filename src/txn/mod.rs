@@ -79,7 +79,7 @@ impl<S: IState> TxnVariant<S> {
             tmp
         });
         let request = self.extra.query_request(&self.state, query.into(), vars);
-        let response = match IDgraphClient::query(&mut self.client, request).await {
+        let response = match self.client.query(request).await {
             Ok(response) => response,
             Err(err) => {
                 return Err(DgraphError::GrpcError(err.to_string()));
