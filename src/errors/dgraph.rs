@@ -1,5 +1,8 @@
 use failure::Fail;
 
+///
+/// Possible dGraph errors
+///
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(display = "Dgraph: Txn start mismatch")]

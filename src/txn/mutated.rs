@@ -216,24 +216,28 @@ impl TxnVariant<Mutated> {
     ///
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
+    /// use serde::Serialize;
     ///
     ///#[derive(Serialize)]
     /// struct Person {
     ///   uid: String,
     ///   name: String,
     /// }
+    /// #[tokio::main]
+    /// async fn main() {   
+    ///    let p = Person {
+    ///        uid:  "_:alice".into(),
+    ///        name: "Alice".into(),
+    ///    };
     ///
-    /// let p = Person {
-    ///   uid:  "_:alice".into(),
-    ///   name: "Alice".into(),
-    /// };
+    ///    let mut mu = Mutation::new();
+    ///    mu.set_set_json(&p).expect("JSON");
     ///
-    /// let mu = Mutation::new().with_set_json(&p).expect("JSON");
-    ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let mut txn = client.new_mutated_txn();
-    /// let result = txn.mutate(mu).await.expect("failed to create data");
-    /// txn.commit().await.expect("Txn is not commited");
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///    let mut txn = client.new_mutated_txn();
+    ///    let result = txn.mutate(mu).await.expect("failed to create data");
+    ///    txn.commit().await.expect("Txn is not commited");
+    /// }
     /// ```
     ///
     pub async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
@@ -261,6 +265,7 @@ impl TxnVariant<Mutated> {
     ///
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
+    /// use serde::Serialize;
     ///
     ///#[derive(Serialize)]
     /// struct Person {
@@ -268,16 +273,20 @@ impl TxnVariant<Mutated> {
     ///   name: String,
     /// }
     ///
-    /// let p = Person {
-    ///   uid:  "_:alice".into(),
-    ///   name: "Alice".into(),
-    /// };
+    /// #[tokio::main]
+    /// async fn main() {
+    ///    let p = Person {
+    ///        uid:  "_:alice".into(),
+    ///        name: "Alice".into(),
+    ///    };
     ///
-    /// let mu = Mutation::new().with_set_json(&p).expect("JSON");
+    ///    let mut mu = Mutation::new();
+    ///    mu.set_set_json(&p).expect("JSON");
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let txn = client.new_mutated_txn();
-    /// let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///    let txn = client.new_mutated_txn();
+    ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
+    /// }
     /// ```
     ///
     pub async fn mutate_and_commit_now(
@@ -311,18 +320,21 @@ impl TxnVariant<Mutated> {
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
     ///
-    /// let q = r#"
-    ///   query {
-    ///       user as var(func: eq(email, "wrong_email@dgraph.io"))
-    ///   }"#;
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query {
+    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
+    ///         }"#;
     ///
-    /// let mut mu = Mutation::new();
-    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     let mut mu = Mutation::new();
+    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let txn = client.new_mutated_txn();
-    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.upsert(q, mu).await.expect("failed to upsert data");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
+    /// }
     /// ```
     ///
     /// Upsert with more mutations
@@ -330,25 +342,28 @@ impl TxnVariant<Mutated> {
     /// use dgraph_tonic::{Client, Mutation};
     /// use std::collections::HashMap;
     ///
-    /// let q = r#"
-    ///   query {
-    ///       user as var(func: eq(email, $email))
-    ///   }"#;
-    /// let mut vars = HashMap::new();
-    /// vars.insert("$email","wrong_email@dgraph.io");
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query {
+    ///             user as var(func: eq(email, $email))
+    ///         }"#;
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$email","wrong_email@dgraph.io");
     ///
-    /// let mut mu_1 = Mutation::new();
-    /// mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    /// mu_1.set_cond("@if(eq(len(user), 1))");
+    ///     let mut mu_1 = Mutation::new();
+    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     mu_1.set_cond("@if(eq(len(user), 1))");
     ///
-    /// let mut mu_2 = Mutation::new();
-    /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    /// mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///     let mut mu_2 = Mutation::new();
+    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let txn = client.new_mutated_txn();
-    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// }
     /// ```      
     ///
     #[cfg(feature = "dgraph-1-1")]
@@ -391,20 +406,23 @@ impl TxnVariant<Mutated> {
     /// use dgraph_tonic::{Client, Mutation};
     /// use std::collections::HashMap;
     ///
-    /// let q = r#"
-    ///   query alices($email: string) { {
-    ///       user as var(func: eq(email, $email))
-    ///   }"#;
-    /// let mut vars = HashMap::new();
-    /// vars.insert("$email", "wrong_email@dgraph.io");
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query alices($email: string) { {
+    ///             user as var(func: eq(email, $email))
+    ///         }"#;
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$email", "wrong_email@dgraph.io");
     ///
-    /// let mut mu = Mutation::new();
-    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     let mut mu = Mutation::new();
+    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let txn = client.new_mutated_txn();
-    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
+    /// }
     /// ```
     ///
     /// Upsert with more mutations
@@ -412,25 +430,28 @@ impl TxnVariant<Mutated> {
     /// use dgraph_tonic::{Client, Mutation};
     /// use std::collections::HashMap;
     ///
-    /// let q = r#"
-    ///   query {
-    ///       user as var(func: eq(email, $email))
-    ///   }"#;
-    /// let mut vars = HashMap::new();
-    /// vars.insert("$email",wrong_email@dgraph.io);
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query {
+    ///             user as var(func: eq(email, $email))
+    ///         }"#;
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$email",wrong_email@dgraph.io);
     ///
-    /// let mut mu_1 = Mutation::new();
-    /// mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    /// mu_1.set_cond("@if(eq(len(user), 1))");
+    ///     let mut mu_1 = Mutation::new();
+    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     mu_1.set_cond("@if(eq(len(user), 1))");
     ///
-    /// let mut mu_2 = Mutation::new();
-    /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    /// mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///     let mut mu_2 = Mutation::new();
+    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let txn = client.new_mutated_txn();
-    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// }
     /// ```    
     ///
     #[cfg(feature = "dgraph-1-1")]

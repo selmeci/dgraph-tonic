@@ -10,6 +10,9 @@ use crate::{
     Response as DgraphResponse, Result, TxnContext, Version,
 };
 
+///
+/// Hold channel connection do dGraph and implement calls for dGraph API operations.
+///
 #[derive(Clone, Debug)]
 pub struct Stub {
     client: DgraphClient<Channel>,

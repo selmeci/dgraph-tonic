@@ -1,5 +1,4 @@
-//! Transactions is modeled with principles of [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/)
-
+///! Transactions is modeled with principles of [The Typestate Pattern in Rust](http:///cliffle.com/blog/rust-typestate/)
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::{Send, Sync};
@@ -86,6 +85,7 @@ impl<S: IState> TxnVariant<S> {
     /// ```
     /// use std::collections::HashMap;
     /// use dgraph_tonic::{Client, Response};
+    /// use serde::Deserialize;
     ///
     /// #[derive(Deserialize, Debug)]
     /// struct Person {
@@ -98,17 +98,19 @@ impl<S: IState> TxnVariant<S> {
     ///   all: Vec<Person>
     /// }
     ///
-    /// let q = r#"query all($a: string) {
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"query all($a: string) {
     ///     all(func: eq(name, "Alice")) {
     ///       uid
     ///       name
     ///     }
     ///   }"#;
     ///
-    ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let resp: Response = client.new_readonly_txn().query(q).await.expect("query");
-    /// let persons: Persons = resp.try_into().except("Persons");
+    ///   let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///   let resp: Response = client.new_readonly_txn().query(q).await.expect("Query response");
+    ///   let persons: Persons = resp.try_into().except("Persons");
+    /// }
     /// ```
     ///
     pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
@@ -138,31 +140,35 @@ impl<S: IState> TxnVariant<S> {
     /// ```
     /// use std::collections::HashMap;
     /// use dgraph_tonic::{Client, Response};
+    /// use serde::Deserialize;
     ///
     /// #[derive(Deserialize, Debug)]
     /// struct Person {
-    ///   uid: String,
-    ///   name: String,
-    /// }    
+    ///     uid: String,
+    ///     name: String,
+    /// }
     ///
     /// #[derive(Deserialize, Debug)]
     /// struct Persons {
-    ///   all: Vec<Person>
+    ///     all: Vec<Person>
     /// }
     ///
-    /// let q = r#"query all($a: string) {
-    ///     all(func: eq(name, $a)) {
-    ///       uid
-    ///       name
-    ///     }
-    ///   }"#;
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"query all($a: string) {
+    ///         all(func: eq(name, $a)) {
+    ///         uid
+    ///         name
+    ///         }
+    ///     }"#;
     ///
-    /// let mut vars = HashMap::new();
-    /// vars.insert("$a", "Alice");
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$a", "Alice");
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let resp: Response = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
-    /// let persons: Persons = resp.try_into().except("Persons");
+    ///     let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let resp: Response = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query response");
+    ///     let persons: Persons = resp.try_into().except("Persons");
+    /// }
     /// ```    
     pub async fn query_with_vars<Q, K, V>(
         &mut self,
@@ -219,7 +225,7 @@ mod tests {
 
     #[tokio::test]
     async fn mutate_and_commit_now() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let txn = client.new_mutated_txn();
         let p = Person {
             uid: "_:alice".to_string(),
@@ -233,9 +239,9 @@ mod tests {
 
     #[tokio::test]
     async fn commit() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        //first mutation
+        ///first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -244,7 +250,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //second mutation
+        ///second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -253,7 +259,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //commit
+        ///commit
         let commit = txn.commit().await;
         assert!(commit.is_ok())
     }
@@ -261,9 +267,9 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        //first mutation
+        ///first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -272,7 +278,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //second mutation
+        ///second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -281,10 +287,10 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //commit
+        ///commit
         let commit = txn.commit().await;
         assert!(commit.is_ok());
-        //upser all alices with email
+        ///upser all alices with email
         let query = r#"
           query {
               user as var(func: eq(name, "Alice"))
@@ -299,9 +305,9 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert_with_vars() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        //first mutation
+        ///first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -310,7 +316,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //second mutation
+        ///second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -319,10 +325,10 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        //commit
+        ///commit
         let commit = txn.commit().await;
         assert!(commit.is_ok());
-        //upser all alices with email
+        ///upser all alices with email
         let query = r#"
           query alices($a: string) {
               user as var(func: eq(name, $a))
@@ -338,7 +344,7 @@ mod tests {
 
     #[tokio::test]
     async fn query() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -353,7 +359,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_with_vars() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_read_only_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {

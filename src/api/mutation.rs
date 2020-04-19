@@ -51,6 +51,7 @@ impl Mutation {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
+    /// use serde::Serialize;
     ///
     /// #[derive(Serialize)]
     /// struct Person {
@@ -64,7 +65,7 @@ impl Mutation {
     /// };
     ///
     /// let mut mu = Mutation::new();
-    /// mu.set_set_json(&p)?;
+    /// mu.set_set_json(&p).expect("JSON");
     /// ```
     ///
     pub fn set_set_json<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
@@ -91,6 +92,7 @@ impl Mutation {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
+    /// use serde::Serialize;
     ///
     /// #[derive(Serialize)]
     /// struct Person {
@@ -105,7 +107,7 @@ impl Mutation {
     ///
     /// let mut mu = Mutation::new();
     /// //remove name predicate
-    /// mu.set_delete_json(&p)?;
+    /// mu.set_delete_json(&p).expect("JSON");
     /// ```
     ///
     pub fn set_delete_json<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>

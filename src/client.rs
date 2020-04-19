@@ -74,7 +74,10 @@ impl Client {
     /// ```
     /// use dgraph_tonic::Client;
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    /// }
     /// ```
     ///
     pub async fn new<S: TryInto<Uri>>(endpoints: Vec<S>) -> Result<Self, Error> {
@@ -106,18 +109,6 @@ impl Client {
     /// * endpoints vector is empty
     /// * item in vector cannot by converted into Uri
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use dgraph_tonic::Client;
-    ///
-    /// let client = Client::new_with_tls_client_auth(
-    ///     vec!["http://127.0.0.1:19080"],
-    ///     "/path/ca.crt",
-    ///     "/path/client.crt",
-    ///     "/path/client.key"
-    /// ).await.expect("Connected to dGraph with TLS");
-    /// ```
     ///
     pub async fn new_with_tls_client_auth<S: TryInto<Uri>>(
         endpoints: Vec<S>,
@@ -202,12 +193,16 @@ impl Client {
     /// ```
     /// use dgraph_tonic::{Client, Operation};
     ///
-    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
-    /// let op = Operation {
-    ///     schema: "name: string @index(exact) .".into(),
-    ///     ..Default::default()
-    /// };
-    /// client.alter(op).await.expect("Schema is not updated");
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let op = Operation {
+    ///         schema: "name: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     Ok(())
+    /// }
     /// ```
     ///
     pub async fn alter(&self, op: Operation) -> Result<Payload, Status> {
