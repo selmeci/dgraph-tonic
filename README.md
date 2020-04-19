@@ -64,7 +64,6 @@ Alternatively, secure client can be used:
 
 ```rust
 let client = Client::new_with_tls_client_auth(
-    "dgraph.io"
     vec!["https://dgraph.io"],
     "/path/ca.crt",
     "/path/client.crt",
