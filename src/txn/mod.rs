@@ -241,7 +241,7 @@ mod tests {
     async fn commit() {
         let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        ///first mutation
+        //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -250,7 +250,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///second mutation
+        //second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -259,7 +259,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///commit
+        //commit
         let commit = txn.commit().await;
         assert!(commit.is_ok())
     }
@@ -269,7 +269,7 @@ mod tests {
     async fn upsert() {
         let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        ///first mutation
+        //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -278,7 +278,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///second mutation
+        //second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -287,10 +287,10 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///commit
+        //commit
         let commit = txn.commit().await;
         assert!(commit.is_ok());
-        ///upser all alices with email
+        //upser all alices with email
         let query = r#"
           query {
               user as var(func: eq(name, "Alice"))
@@ -307,7 +307,7 @@ mod tests {
     async fn upsert_with_vars() {
         let client = Client::new(vec!["http:///127.0.0.1:19080"]).await.unwrap();
         let mut txn = client.new_mutated_txn();
-        ///first mutation
+        //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -316,7 +316,7 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///second mutation
+        //second mutation
         let p = Person {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
@@ -325,10 +325,10 @@ mod tests {
         mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
-        ///commit
+        //commit
         let commit = txn.commit().await;
         assert!(commit.is_ok());
-        ///upser all alices with email
+        //upser all alices with email
         let query = r#"
           query alices($a: string) {
               user as var(func: eq(name, $a))
