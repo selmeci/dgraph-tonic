@@ -96,8 +96,8 @@ impl TxnVariant<Mutated> {
     #[cfg(feature = "dgraph-1-0")]
     async fn do_mutation<Q, K, V>(
         &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
+        _query: Q,
+        _vars: HashMap<K, V>,
         mut mu: Mutation,
         commit_now: bool,
     ) -> Result<MutationResponse, DgraphError>
@@ -228,11 +228,12 @@ impl TxnVariant<Mutated> {
     ///   name: "Alice".into(),
     /// };
     ///
-    /// let mu = Mutation::new().with_set_json(&p)?;
+    /// let mu = Mutation::new().with_set_json(&p).expect("JSON");
     ///
-    /// let txn = client.new_mutated_txn();
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    /// let mut txn = client.new_mutated_txn();
     /// let result = txn.mutate(mu).await.expect("failed to create data");
-    /// txn.commit().await?;
+    /// txn.commit().await.expect("Txn is not commited");
     /// ```
     ///
     pub async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
@@ -272,8 +273,9 @@ impl TxnVariant<Mutated> {
     ///   name: "Alice".into(),
     /// };
     ///
-    /// let mu = Mutation::new().with_set_json(&p)?;
+    /// let mu = Mutation::new().with_set_json(&p).expect("JSON");
     ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let txn = client.new_mutated_txn();
     /// let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
     /// ```
@@ -317,6 +319,7 @@ impl TxnVariant<Mutated> {
     /// let mut mu = Mutation::new();
     /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     /// let response = txn.upsert(q, mu).await.expect("failed to upsert data");
@@ -332,7 +335,7 @@ impl TxnVariant<Mutated> {
     ///       user as var(func: eq(email, $email))
     ///   }"#;
     /// let mut vars = HashMap::new();
-    /// vars.insert("$email",wrong_email@dgraph.io);
+    /// vars.insert("$email","wrong_email@dgraph.io");
     ///
     /// let mut mu_1 = Mutation::new();
     /// mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
@@ -342,9 +345,10 @@ impl TxnVariant<Mutated> {
     /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     /// mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.upsert(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
     /// ```      
     ///
     #[cfg(feature = "dgraph-1-1")]
@@ -397,6 +401,7 @@ impl TxnVariant<Mutated> {
     /// let mut mu = Mutation::new();
     /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     /// let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
@@ -422,6 +427,7 @@ impl TxnVariant<Mutated> {
     /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     /// mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     /// let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");

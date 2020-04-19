@@ -73,7 +73,8 @@ impl Client {
     ///
     /// ```
     /// use dgraph_tonic::Client;
-    /// let client = Client::new(vec!["http://127.0.0.1:9080"]).await?;
+    ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// ```
     ///
     pub async fn new<S: TryInto<Uri>>(endpoints: Vec<S>) -> Result<Self, Error> {
@@ -109,12 +110,13 @@ impl Client {
     ///
     /// ```
     /// use dgraph_tonic::Client;
+    ///
     /// let client = Client::new_with_tls_client_auth(
-    ///     vec!["http://127.0.0.1:9080"],
+    ///     vec!["http://127.0.0.1:19080"],
     ///     "/path/ca.crt",
     ///     "/path/client.crt",
     ///     "/path/client.key"
-    /// ).await?;
+    /// ).await.expect("Connected to dGraph with TLS");
     /// ```
     ///
     pub async fn new_with_tls_client_auth<S: TryInto<Uri>>(
@@ -198,12 +200,14 @@ impl Client {
     /// Install a schema into dgraph. A `name` predicate is string type and has exact index.
     ///
     /// ```
-    /// use dgraph_tonic::Client;
-    /// let client = Client::new(vec!["http://127.0.0.1:9080"]).await?;
+    /// use dgraph_tonic::{Client, Operation};
+    ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
     /// let op = Operation {
     ///     schema: "name: string @index(exact) .".into(),
     ///     ..Default::default()
     /// };
+    /// client.alter(op).await.expect("Schema is not updated");
     /// ```
     ///
     pub async fn alter(&self, op: Operation) -> Result<Payload, Status> {

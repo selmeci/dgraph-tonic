@@ -81,6 +81,36 @@ impl<S: IState> TxnVariant<S> {
     ///
     /// gRPC errors can be returned also.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::{Client, Response};
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// struct Person {
+    ///   uid: String,
+    ///   name: String,
+    /// }
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// struct Persons {
+    ///   all: Vec<Person>
+    /// }
+    ///
+    /// let q = r#"query all($a: string) {
+    ///     all(func: eq(name, "Alice")) {
+    ///       uid
+    ///       name
+    ///     }
+    ///   }"#;
+    ///
+    ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    /// let resp: Response = client.new_readonly_txn().query(q).await.expect("query");
+    /// let persons: Persons = resp.try_into().except("Persons");
+    /// ```
+    ///
     pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
@@ -103,6 +133,37 @@ impl<S: IState> TxnVariant<S> {
     ///
     /// gRPC errors can be returned also.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::{Client, Response};
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// struct Person {
+    ///   uid: String,
+    ///   name: String,
+    /// }    
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// struct Persons {
+    ///   all: Vec<Person>
+    /// }
+    ///
+    /// let q = r#"query all($a: string) {
+    ///     all(func: eq(name, $a)) {
+    ///       uid
+    ///       name
+    ///     }
+    ///   }"#;
+    ///
+    /// let mut vars = HashMap::new();
+    /// vars.insert("$a", "Alice");
+    ///
+    /// let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    /// let resp: Response = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
+    /// let persons: Persons = resp.try_into().except("Persons");
+    /// ```    
     pub async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,

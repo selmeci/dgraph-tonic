@@ -50,6 +50,8 @@ impl Mutation {
     /// # Examples
     ///
     /// ```
+    /// use dgraph_tonic::Mutation;
+    ///
     /// #[derive(Serialize)]
     /// struct Person {
     ///   uid: String,
@@ -88,6 +90,8 @@ impl Mutation {
     /// # Examples
     ///
     /// ```
+    /// use dgraph_tonic::Mutation;
+    ///
     /// #[derive(Serialize)]
     /// struct Person {
     ///   uid: String,
@@ -123,6 +127,8 @@ impl Mutation {
     /// # Examples
     ///
     /// ```
+    /// use dgraph_tonic::Mutation;
+    ///
     /// let mut mu = Mutation::new();
     /// //remove name predicate
     /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
@@ -143,6 +149,8 @@ impl Mutation {
     /// # Examples
     ///
     /// ```
+    /// use dgraph_tonic::Mutation;
+    ///
     /// let mut mu = Mutation::new();
     /// //remove name predicate
     /// mu.set_set_nquads(r#"uid(user) <email> * ."#);
@@ -163,6 +171,8 @@ impl Mutation {
     /// # Examples
     ///
     /// ```
+    /// use dgraph_tonic::Mutation;
+    ///
     /// let mut mu = Mutation::new();
     /// //remove name predicate
     /// mu.set_cond("@if(eq(len(user), 1))");
