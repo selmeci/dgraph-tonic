@@ -184,7 +184,7 @@ println!("Persons: {:?}", persons);
 
 Avaibale since `dgraph-1-1`.
 
-The `txn.query_and_mutate(query, mutation)` function allows you to run upserts consisting of one query and one mutation. Query variables could be defined with `txn.query_with_vars_and_mutate(query, vars, mutation)` function and can then be used in the mutation. If now futher operations with transaction is required `*_and_commit_now()` variant of functions should be used (transaction is consumed in this case).
+The `txn.upsert(query, mutation)` function allows you to run upserts consisting of one query and one or more mutations. Query variables could be defined with `txn.upsert_with_vars(query, vars, mutation)`. Transaction in upsert is commited.
 
 To know more about upsert, we highly recommend going through the docs at https://docs.dgraph.io/mutations/#upsert-block.
 
@@ -199,9 +199,11 @@ mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
 
 let mut txn = client.new_mutated_txn();
 // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-let response = txn.query_and_mutate_and_commit_now(mu).await.expect("failed to upsert data");
+let response = txn.upsert(mu).await.expect("failed to upsert data");
 
 ```
+
+You can upsert with one mutation or vector of mutations.
 
 ### Running a Conditional Upsert
 
@@ -222,8 +224,7 @@ mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
 mu.set_cond("@if(eq(len(user), 1))");
 
 let mut txn = client.new_mutated_txn();
-let response = txn.query_and_mutate(mu).await.expect("failed to upsert data");
-txn.commit().await?;
+let response = txn.upsert(mu).await.expect("failed to upsert data");
 ```
 
 ### Commit a transaction

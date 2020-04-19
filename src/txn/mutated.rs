@@ -26,14 +26,42 @@ pub type MutationResponse = Assigned;
 #[cfg(feature = "dgraph-1-1")]
 pub type MutationResponse = Response;
 
+///
+/// Inner state for transaction which can modify data in DB.
+///
 #[derive(Clone, Debug)]
 pub struct Mutated {
     base: Base,
     mutated: bool,
 }
 
+///
+/// Upsert mutation can be defined with one or more mutations
+///
+#[cfg(feature = "dgraph-1-1")]
+pub struct UpsertMutation {
+    mu: Vec<Mutation>,
+}
+
+#[cfg(feature = "dgraph-1-1")]
+impl From<Vec<Mutation>> for UpsertMutation {
+    fn from(mu: Vec<Mutation>) -> Self {
+        Self { mu }
+    }
+}
+
+#[cfg(feature = "dgraph-1-1")]
+impl From<Mutation> for UpsertMutation {
+    fn from(mu: Mutation) -> Self {
+        Self { mu: vec![mu] }
+    }
+}
+
 #[async_trait]
 impl IState for Mutated {
+    ///
+    /// Do same query like default transaction
+    ///
     fn query_request(
         &self,
         state: &TxnState,
@@ -44,9 +72,15 @@ impl IState for Mutated {
     }
 }
 
+///
+/// Transaction variant with mutations support.
+///
 pub type MutatedTxn = TxnVariant<Mutated>;
 
 impl TxnVariant<Base> {
+    ///
+    /// Create new transaction for mutation operations.
+    ///
     pub fn mutated(self) -> MutatedTxn {
         TxnVariant {
             state: self.state,
@@ -65,6 +99,7 @@ impl TxnVariant<Mutated> {
         query: Q,
         vars: HashMap<K, V>,
         mut mu: Mutation,
+        commit_now: bool,
     ) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
@@ -72,6 +107,7 @@ impl TxnVariant<Mutated> {
         V: Into<String> + Send + Sync,
     {
         self.extra.mutated = true;
+        mu.commit_now = commit_now;
         mu.start_ts = self.context.start_ts;
         let assigned = match self.client.mutate(mu).await {
             Ok(assigned) => assigned,
@@ -87,28 +123,31 @@ impl TxnVariant<Mutated> {
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn do_mutation<Q, K, V>(
+    async fn do_mutation<Q, K, V, M>(
         &mut self,
         query: Q,
         vars: HashMap<K, V>,
-        mu: Mutation,
+        mu: M,
+        commit_now: bool,
     ) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation>,
     {
         self.extra.mutated = true;
         let vars = vars.into_iter().fold(HashMap::new(), |mut tmp, (k, v)| {
             tmp.insert(k.into(), v.into());
             tmp
         });
+        let mu: UpsertMutation = mu.into();
         let request = Request {
             query: query.into(),
             vars,
             start_ts: self.context.start_ts,
-            commit_now: mu.commit_now,
-            mutations: vec![mu],
+            commit_now,
+            mutations: mu.mu,
             ..Default::default()
         };
         let response = match self.client.do_request(request).await {
@@ -138,11 +177,25 @@ impl TxnVariant<Mutated> {
         }
     }
 
+    ///
+    /// Discard transaction
+    ///
+    /// # Errors
+    ///
+    /// Return gRPC error.
+    ///
     pub async fn discard(mut self) -> Result<(), DgraphError> {
         self.context.aborted = true;
         self.commit_or_abort().await
     }
 
+    ///
+    /// Commit transaction
+    ///
+    /// # Errors
+    ///
+    /// Return gRPC error.
+    ///
     pub async fn commit(self) -> Result<(), DgraphError> {
         self.commit_or_abort().await
     }
@@ -182,9 +235,8 @@ impl TxnVariant<Mutated> {
     /// txn.commit().await?;
     /// ```
     ///
-    pub async fn mutate(&mut self, mut mu: Mutation) -> Result<MutationResponse, DgraphError> {
-        mu.commit_now = false;
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu)
+    pub async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
             .await
     }
 
@@ -228,17 +280,17 @@ impl TxnVariant<Mutated> {
     ///
     pub async fn mutate_and_commit_now(
         mut self,
-        mut mu: Mutation,
+        mu: Mutation,
     ) -> Result<MutationResponse, DgraphError> {
-        mu.commit_now = true;
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu)
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
             .await
     }
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
     ///
-    /// This function allows you to run upserts consisting of one query and one mutation.
+    /// This function allows you to run upserts consisting of one query and one or more mutations.
+    /// Transaction is commited.
     ///
     ///
     /// # Arguments
@@ -253,6 +305,7 @@ impl TxnVariant<Mutated> {
     ///
     /// # Example
     ///
+    /// Upsert with one mutation
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
     ///
@@ -266,79 +319,54 @@ impl TxnVariant<Mutated> {
     ///
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.query_and_mutate(q, mu).await.expect("failed to upsert data");
-    /// txn.commit().await?;
+    /// let response = txn.upsert(q, mu).await.expect("failed to upsert data");
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
-    pub async fn query_and_mutate<Q>(
-        &mut self,
-        query: Q,
-        mut mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-    {
-        mu.commit_now = false;
-        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu)
-            .await
-    }
-
-    ///
-    /// Adding or removing data in Dgraph is called a mutation.
-    ///
-    /// This function allows you to run upserts consisting of one query and one mutation.
-    ///
-    /// Sometimes, you only want to commit a mutation, without querying anything further.
-    /// In such cases, you can use this function to indicate that the mutation must be immediately
-    /// committed.
-    ///
-    /// # Arguments
-    ///
-    /// * `q`: dGraph query
-    /// * `mu`: required mutations
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
+    /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
+    /// use std::collections::HashMap;
     ///
     /// let q = r#"
     ///   query {
-    ///       user as var(func: eq(email, "wrong_email@dgraph.io"))
+    ///       user as var(func: eq(email, $email))
     ///   }"#;
+    /// let mut vars = HashMap::new();
+    /// vars.insert("$email",wrong_email@dgraph.io);
     ///
-    /// let mut mu = Mutation::new();
-    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    /// let mut mu_1 = Mutation::new();
+    /// mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    /// mu_1.set_cond("@if(eq(len(user), 1))");
+    ///
+    /// let mut mu_2 = Mutation::new();
+    /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    /// mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.query_and_mutate_and_commit_now(q, mu).await.expect("failed to upsert data");
-    /// ```
+    /// let response = txn.upsert(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// ```      
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub async fn query_and_mutate_and_commit_now<Q>(
-        mut self,
-        query: Q,
-        mut mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError>
+    pub async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation>,
     {
-        mu.commit_now = true;
-        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu)
-            .await
+        self.do_mutation(
+            query,
+            HashMap::<String, String>::with_capacity(0),
+            mu,
+            false,
+        )
+        .await
     }
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
     ///
-    /// This function allows you to run upserts consisting of one query and one mutation.
+    /// This function allows you to run upserts with query variables consisting of one query and one
+    /// ore more mutations.
     ///
     ///
     /// # Arguments
@@ -354,6 +382,27 @@ impl TxnVariant<Mutated> {
     ///
     /// # Example
     ///
+    /// Upsert with only one mutation
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation};
+    /// use std::collections::HashMap;
+    ///
+    /// let q = r#"
+    ///   query alices($email: string) { {
+    ///       user as var(func: eq(email, $email))
+    ///   }"#;
+    /// let mut vars = HashMap::new();
+    /// vars.insert("$email", "wrong_email@dgraph.io");
+    ///
+    /// let mut mu = Mutation::new();
+    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///
+    /// let txn = client.new_mutated_txn();
+    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    /// let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
+    /// ```
+    ///
+    /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
     /// use std::collections::HashMap;
@@ -365,85 +414,32 @@ impl TxnVariant<Mutated> {
     /// let mut vars = HashMap::new();
     /// vars.insert("$email",wrong_email@dgraph.io);
     ///
-    /// let mut mu = Mutation::new();
-    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    /// let mut mu_1 = Mutation::new();
+    /// mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    /// mu_1.set_cond("@if(eq(len(user), 1))");
+    ///
+    /// let mut mu_2 = Mutation::new();
+    /// mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    /// mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
     /// let txn = client.new_mutated_txn();
     /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.query_with_vars_and_mutate(q, vars, mu).await.expect("failed to upsert data");
-    /// txn.commit().await?;
-    /// ```
+    /// let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// ```    
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub async fn query_with_vars_and_mutate<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-        mut mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        K: Into<String> + Send + Sync + Eq + Hash,
-        V: Into<String> + Send + Sync,
-    {
-        mu.commit_now = false;
-        self.do_mutation(query, vars, mu).await
-    }
-
-    ///
-    /// Adding or removing data in Dgraph is called a mutation.
-    ///
-    /// This function allows you to run upserts consisting of one query and one mutation.
-    ///
-    /// Sometimes, you only want to commit a mutation, without querying anything further.
-    /// In such cases, you can use this function to indicate that the mutation must be immediately
-    /// committed.
-    ///
-    /// # Arguments
-    ///
-    /// * `q`: dGraph query
-    /// * `mu`: required mutations
-    /// * `vars`: query variables
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation};
-    /// use std::collections::HashMap;
-    ///
-    /// let q = r#"
-    ///   query {
-    ///       user as var(func: eq(email, $email))
-    ///   }"#;
-    /// let mut vars = HashMap::new();
-    /// vars.insert("$email",wrong_email@dgraph.io);
-    ///
-    /// let mut mu = Mutation::new();
-    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    ///
-    /// let txn = client.new_mutated_txn();
-    /// // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    /// let response = txn.query_with_vars_and_mutate_and_commit_now(q, vars, mu).await.expect("failed to upsert data");
-    /// ```
-    ///
-    #[cfg(feature = "dgraph-1-1")]
-    pub async fn query_with_vars_and_mutate_and_commit_now<Q, K, V>(
+    pub async fn upsert_with_vars<Q, K, V, M>(
         mut self,
         query: Q,
         vars: HashMap<K, V>,
-        mut mu: Mutation,
+        mu: M,
     ) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation>,
     {
-        mu.commit_now = true;
-        self.do_mutation(query, vars, mu).await
+        self.do_mutation(query, vars, mu, true).await
     }
 }
