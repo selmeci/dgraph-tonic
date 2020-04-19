@@ -175,7 +175,7 @@ let q = r#"query all($a: string) {
 let mut vars = HashMap::new();
 vars.insert("$a", "Alice");
 
-let resp: Response = client.new_readonly_txn().query_with_vars(q, vars).await.expect("query");
+let resp: Response = client.new_read_only_txn().query_with_vars(q, vars).await.expect("query");
 let persons: Persons = resp.try_into().except("Persons");
 println!("Persons: {:?}", persons);
 ```
@@ -194,7 +194,7 @@ let q = r#"schema(pred: [name]) {
   lang
 }"#.to_string();
 
-let resp = client.new_readonly_txn().query(q).await?;
+let resp = client.new_read_only_txn().query(q).await?;
 println!("{:#?}", resp.schema);
 ```
 
