@@ -16,6 +16,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 ## Table of contents
 
 - [Installation](#install)
+- [Supported Versions](#supported-versions)
 - [Using a client](#using-a-client)
   - [Create a client](#create-a-client)
   - [Alter the database](#alter-the-database)
@@ -34,6 +35,18 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 [dependencies]
 dgraph = "0.1"
 ```
+
+## Supported Versions
+
+Depending on the version of Dgraph that you are connecting to, you will have to use a different feature of this client (*dgraph-1-0* is default version).
+
+| Dgraph version |      feature      |
+|:--------------:|:-----------------:|
+|     1.0.X      |    *dgraph-1-0*   |
+|     1.1.X      |    *dgraph-1-1*   |
+|    20.03.0     |   NOT SUPPORTED   |
+
+Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
 
 ## Using a client
 
@@ -111,7 +124,7 @@ struct Person {
 let p = Person {
   uid:  "_:alice".into(),
   name: "Alice".into(),
-}
+};
 
 let mu = Mutation::new().with_set_json(&p)?;
 
