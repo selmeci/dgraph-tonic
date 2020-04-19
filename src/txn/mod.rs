@@ -125,7 +125,8 @@ mod tests {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
         };
-        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate_and_commit_now(mu).await;
         assert!(response.is_ok());
     }
@@ -139,7 +140,8 @@ mod tests {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
         };
-        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
         //second mutation
@@ -147,7 +149,8 @@ mod tests {
             uid: "_:mike".to_string(),
             name: "Mike".to_string(),
         };
-        let mu = Mutation::new().with_set_json(&p).expect("Invalid JSON");
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
         let response = txn.mutate(mu).await;
         assert!(response.is_ok());
         //commit
