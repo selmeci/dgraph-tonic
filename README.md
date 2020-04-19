@@ -8,8 +8,6 @@ dGraph async Rust client which communicates with the server using [gRPC](https:/
 
 Before using this client, it is highly recommended to go through [tour.dgraph.io] and [docs.dgraph.io] to understand how to run and work with Dgraph.
 
-**Only dGraph version 1.0.x is now supported.**
-
 [docs.dgraph.io]: https://docs.dgraph.io
 [tour.dgraph.io]: https://tour.dgraph.io
 
