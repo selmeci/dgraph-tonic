@@ -180,6 +180,24 @@ let persons: Persons = resp.try_into().except("Persons");
 println!("Persons: {:?}", persons);
 ```
 
+When running a schema query, the schema response is found in the `Schema` field of `Response`.
+
+```rust
+let q = r#"schema(pred: [name]) {
+  type
+  index
+  reverse
+  tokenizer
+  list
+  count
+  upsert
+  lang
+}"#.to_string();
+
+let resp = client.new_readonly_txn().query(q).await?;
+println!("{:#?}", resp.schema);
+```
+
 ### Running an Upsert: Query + Mutation
 
 Avaibale since `dgraph-1-1`.
@@ -251,10 +269,10 @@ Tests require Dgraph running on `localhost:19080`. For the convenience there are
 docker-compose -f docker-compose-1-X.yaml up -d
 ```
 
-Since we are working with a database, tests also need to be run in a single thread to prevent aborts.
+Since we are working with a database, tests also need to be run in a single thread to prevent aborts. Feature flags are used depending on version of Dgraph you are using. Eg.:
 
 ```bash
-cargo test -- --test-threads=1
+cargo test --no-default-features --features dgraph-1-1 -- --test-threads=1
 ```
 
 ## Contributing
