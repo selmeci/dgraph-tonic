@@ -111,4 +111,44 @@ impl Mutation {
         self.delete_json = delete_json;
         Ok(())
     }
+
+    ///
+    /// Set set Nquads in Mutation.
+    ///
+    /// # Arguments
+    ///
+    /// * `nquads` - set nquads
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut mu = Mutation::new();
+    /// //remove name predicate
+    /// mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    /// ```
+    ///
+    pub fn set_set_nquads<S: Into<String>>(&mut self, nquads: S) {
+        let n_quads: String = nquads.into();
+        self.set_nquads = n_quads.as_bytes().to_vec();
+    }
+
+    ///
+    /// Set delete Nquads in Mutation.
+    ///
+    /// # Arguments
+    ///
+    /// * `nquads` - delete nquads
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut mu = Mutation::new();
+    /// //remove name predicate
+    /// mu.set_set_nquads(r#"uid(user) <email> * ."#);
+    /// ```
+    ///
+    pub fn set_delete_nquads<S: Into<String>>(&mut self, nquads: S) {
+        let n_quads: String = nquads.into();
+        self.del_nquads = n_quads.as_bytes().to_vec();
+    }
 }
