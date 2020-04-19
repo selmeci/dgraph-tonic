@@ -46,6 +46,7 @@ Depending on the version of Dgraph that you are connecting to, you will have to 
 |:--------------:|:-----------------:|
 |     1.0.X      |    *dgraph-1-0*   |
 |     1.1.X      |    *dgraph-1-1*   |
+|     1.2.X      |    *dgraph-1-1*   |
 |    20.03.0     |   NOT SUPPORTED   |
 
 Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
