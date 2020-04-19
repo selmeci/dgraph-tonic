@@ -35,7 +35,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph = "0.1"
+dgraph-tonic = "0.2"
 ```
 
 ## Supported Versions
