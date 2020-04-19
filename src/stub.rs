@@ -10,7 +10,7 @@ use crate::{
     Response as DgraphResponse, Result, TxnContext, Version,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Stub {
     client: DgraphClient<Channel>,
 }

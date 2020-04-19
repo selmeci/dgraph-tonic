@@ -1,8 +1,8 @@
 use std::convert::TryInto;
-use std::fmt::{self, Debug, Formatter};
 use std::path::Path;
 
 use failure::Error;
+use http::Uri;
 use rand::Rng;
 use tonic::transport::{Certificate, ClientTlsConfig, Endpoint, Identity};
 use tonic::Status;
@@ -13,20 +13,13 @@ use crate::{
     BestEffortTxn, DgraphClient, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn,
     Result, Txn,
 };
-use http::Uri;
 
 ///
 /// Async client for dGraph DB.
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Client {
     stubs: Vec<Stub>,
-}
-
-impl Debug for Client {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "AsyncDgraphClient")
-    }
 }
 
 impl Client {
