@@ -298,8 +298,6 @@ impl TxnVariant<Mutated> {
     }
 
     ///
-    /// Adding or removing data in Dgraph is called a mutation.
-    ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
     /// Transaction is commited.
     ///
@@ -318,7 +316,7 @@ impl TxnVariant<Mutated> {
     ///
     /// Upsert with one mutation
     /// ```
-    /// use dgraph_tonic::{Client, Mutation};
+    /// use dgraph_tonic::{Client, Mutation, Operation};
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -331,6 +329,11 @@ impl TxnVariant<Mutated> {
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");    
     ///     let txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
@@ -339,7 +342,7 @@ impl TxnVariant<Mutated> {
     ///
     /// Upsert with more mutations
     /// ```
-    /// use dgraph_tonic::{Client, Mutation};
+    /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
     ///
     /// #[tokio::main]
@@ -360,6 +363,11 @@ impl TxnVariant<Mutated> {
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");
     ///     let txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
@@ -376,8 +384,6 @@ impl TxnVariant<Mutated> {
             .await
     }
 
-    ///
-    /// Adding or removing data in Dgraph is called a mutation.
     ///
     /// This function allows you to run upserts with query variables consisting of one query and one
     /// ore more mutations.
@@ -398,7 +404,7 @@ impl TxnVariant<Mutated> {
     ///
     /// Upsert with only one mutation
     /// ```
-    /// use dgraph_tonic::{Client, Mutation};
+    /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
     ///
     /// #[tokio::main]
@@ -414,6 +420,11 @@ impl TxnVariant<Mutated> {
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");
     ///     let txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
@@ -422,7 +433,7 @@ impl TxnVariant<Mutated> {
     ///
     /// Upsert with more mutations
     /// ```
-    /// use dgraph_tonic::{Client, Mutation};
+    /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
     ///
     /// #[tokio::main]
@@ -432,7 +443,7 @@ impl TxnVariant<Mutated> {
     ///             user as var(func: eq(email, $email))
     ///         }"#;
     ///     let mut vars = HashMap::new();
-    ///     vars.insert("$email",wrong_email@dgraph.io);
+    ///     vars.insert("$email","wrong_email@dgraph.io");
     ///
     ///     let mut mu_1 = Mutation::new();
     ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
@@ -443,6 +454,11 @@ impl TxnVariant<Mutated> {
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");    
     ///     let txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
