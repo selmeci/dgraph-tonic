@@ -1,3 +1,5 @@
+//! Transactions is modeled with principles of [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/)
+
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::{Send, Sync};
@@ -19,12 +21,19 @@ mod default;
 mod mutated;
 mod read_only;
 
+///
+/// Transaction state.
+/// Hold txn context and dGraph client for communication.
+///
 #[derive(Clone)]
 pub struct TxnState {
     client: Stub,
     context: TxnContext,
 }
 
+///
+/// Each transaction variant must implement this state trait.
+///
 #[async_trait]
 pub trait IState: Send + Sync + Clone {
     fn query_request(
@@ -35,6 +44,9 @@ pub trait IState: Send + Sync + Clone {
     ) -> Request;
 }
 
+///
+/// Type state for Transaction variants
+///
 #[derive(Clone)]
 pub struct TxnVariant<S: IState> {
     state: Box<TxnState>,
@@ -56,6 +68,19 @@ impl<S: IState> DerefMut for TxnVariant<S> {
 }
 
 impl<S: IState> TxnVariant<S> {
+    ///
+    /// You can run a query by calling `txn.query(q)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
     pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
@@ -64,6 +89,20 @@ impl<S: IState> TxnVariant<S> {
             .await
     }
 
+    ///
+    /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    /// * `vars`: map of variables
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
     pub async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,

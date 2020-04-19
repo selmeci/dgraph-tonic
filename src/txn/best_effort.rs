@@ -6,12 +6,18 @@ use crate::txn::read_only::ReadOnly;
 use crate::txn::{IState, TxnState, TxnVariant};
 use crate::Request;
 
+///
+/// Inner state for best effort transaction
+///
 #[derive(Clone, Debug)]
 pub struct BestEffort {
     read_only: ReadOnly,
 }
 
 impl IState for BestEffort {
+    ///
+    /// Update read only query with best_effort flag
+    ///
     fn query_request(
         &self,
         state: &TxnState,
@@ -24,9 +30,15 @@ impl IState for BestEffort {
     }
 }
 
+///
+/// Best effort variant of read only transaction
+///
 pub type BestEffortTxn = TxnVariant<BestEffort>;
 
 impl TxnVariant<ReadOnly> {
+    ///
+    /// Create best effort transaction from read only state
+    ///
     pub fn best_effort(self) -> BestEffortTxn {
         TxnVariant {
             state: self.state,

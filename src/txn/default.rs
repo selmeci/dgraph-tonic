@@ -5,10 +5,16 @@ use crate::stub::Stub;
 use crate::txn::{IState, TxnState, TxnVariant};
 use crate::Request;
 
+///
+/// Inner state for default transaction
+///
 #[derive(Clone, Debug)]
 pub struct Base;
 
 impl IState for Base {
+    ///
+    /// Create dGraph request within transaction.
+    ///
     fn query_request(
         &self,
         state: &TxnState,
@@ -24,9 +30,15 @@ impl IState for Base {
     }
 }
 
+///
+/// Default transaction state
+///
 pub type Txn = TxnVariant<Base>;
 
 impl TxnVariant<Base> {
+    ///
+    /// Create new default transaction which can do query operations.
+    ///
     pub fn new(client: Stub) -> Txn {
         Self {
             state: Box::new(TxnState {
