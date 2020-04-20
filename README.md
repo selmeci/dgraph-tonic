@@ -33,7 +33,15 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph-tonic = "0.2"
+dgraph-tonic = "0.3"
+```
+
+Default feature is `dgraph-1-1`. 
+
+If you want use dGraph v1.0.x, add this dependency:
+
+```toml
+dgraph-tonic = { version = "0.3", features = ["dgraph-1-0"] }
 ```
 
 ## Supported Versions
@@ -45,7 +53,7 @@ Depending on the version of Dgraph that you are connecting to, you will have to 
 |     1.0.X      |    *dgraph-1-0*   |
 |     1.1.X      |    *dgraph-1-1*   |
 |     1.2.X      |    *dgraph-1-1*   |
-|    20.03.0     |   NOT SUPPORTED   |
+|    20.03.0     |    *dgraph-1-1*   |
 
 Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
 
