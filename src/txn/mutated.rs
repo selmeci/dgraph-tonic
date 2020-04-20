@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 use crate::errors::DgraphError;
 use crate::txn::default::Base;
-use crate::txn::{IState, TxnState, TxnVariant};
+use crate::txn::{IState, Txn, TxnState, TxnVariant};
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
 use crate::IDgraphClient;
@@ -77,7 +77,7 @@ impl IState for Mutated {
 ///
 pub type MutatedTxn = TxnVariant<Mutated>;
 
-impl TxnVariant<Base> {
+impl Txn {
     ///
     /// Create new transaction for mutation operations.
     ///
@@ -92,7 +92,7 @@ impl TxnVariant<Base> {
     }
 }
 
-impl TxnVariant<Mutated> {
+impl MutatedTxn {
     #[cfg(feature = "dgraph-1-0")]
     async fn do_mutation<Q, K, V>(
         &mut self,

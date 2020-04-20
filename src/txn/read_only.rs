@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use crate::txn::default::Base;
-use crate::txn::{IState, TxnState, TxnVariant};
+use crate::txn::{IState, Txn, TxnState, TxnVariant};
 use crate::Request;
 
 ///
@@ -34,7 +34,7 @@ impl IState for ReadOnly {
 ///
 pub type ReadOnlyTxn = TxnVariant<ReadOnly>;
 
-impl TxnVariant<Base> {
+impl Txn {
     ///
     /// Create new read only transaction from default transaction state
     ///

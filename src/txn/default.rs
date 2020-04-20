@@ -35,7 +35,7 @@ impl IState for Base {
 ///
 pub type Txn = TxnVariant<Base>;
 
-impl TxnVariant<Base> {
+impl Txn {
     ///
     /// Create new default transaction which can do query operations.
     ///

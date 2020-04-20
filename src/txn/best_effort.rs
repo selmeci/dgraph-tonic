@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use crate::txn::read_only::ReadOnly;
-use crate::txn::{IState, TxnState, TxnVariant};
+use crate::txn::{IState, ReadOnlyTxn, TxnState, TxnVariant};
 use crate::Request;
 
 ///
@@ -35,7 +35,7 @@ impl IState for BestEffort {
 ///
 pub type BestEffortTxn = TxnVariant<BestEffort>;
 
-impl TxnVariant<ReadOnly> {
+impl ReadOnlyTxn {
     ///
     /// Create best effort transaction from read only state
     ///
