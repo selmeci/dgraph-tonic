@@ -101,9 +101,9 @@ Client provides several factory methods for transactions. Create new transaction
 
 ```rust
 let txn = client.new_txn();
-let read_only = txn.read_only();
-let best_effort = txn.best_effort();
-let mutated = txn.mutated();
+let read_only = client.read_only();
+let best_effort = client.best_effort();
+let mutated = client.mutated();
 ```
 
 Only for Mutated transaction must be always called `txn.dicard().await?` or `txn.commit().await?` function before txn variable is dropped.
