@@ -41,7 +41,8 @@ Default feature is `dgraph-1-1`.
 If you want use dGraph v1.0.x, add this dependency:
 
 ```toml
-dgraph-tonic = { version = "0.3", features = ["dgraph-1-0"] }
+[dependencies]
+dgraph-tonic = { version = "0.3", features = ["dgraph-1-0"], default-features = false }
 ```
 
 ## Supported Versions
