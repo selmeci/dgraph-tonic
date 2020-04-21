@@ -1,4 +1,5 @@
 pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
+pub use tonic::Status;
 
 use crate::api::dgraph_client::DgraphClient;
 #[cfg(feature = "dgraph-1-0")]
