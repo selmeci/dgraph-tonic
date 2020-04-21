@@ -24,6 +24,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
   - [Running an Upsert: Query + Mutation](#running-an-upsert-query--mutation)
   - [Running a Conditional Upsert](#running-a-conditional-upsert)
   - [Commit a transaction](#commit-a-transaction)
+- [Examples](#examples)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
 
@@ -267,6 +268,12 @@ if res.is_err() {
   // Retry or handle error
 }
 ```
+
+## Examples
+
+- [simple][]: Quickstart example of using dgraph-tonic.
+
+[simple]: ./examples/simple
 
 ## Integration tests
 
