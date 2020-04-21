@@ -13,7 +13,7 @@ pub struct Base;
 
 impl IState for Base {
     ///
-    /// Create dGraph request within transaction.
+    /// Create Dgraph request within transaction.
     ///
     fn query_request(
         &self,

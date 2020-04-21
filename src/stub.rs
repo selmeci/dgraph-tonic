@@ -11,7 +11,7 @@ use crate::{
 };
 
 ///
-/// Hold channel connection do dGraph and implement calls for dGraph API operations.
+/// Hold channel connection do Dgraph and implement calls for Dgraph API operations.
 ///
 #[derive(Clone, Debug)]
 pub struct Stub {

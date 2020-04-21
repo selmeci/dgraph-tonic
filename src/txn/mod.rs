@@ -22,7 +22,7 @@ mod read_only;
 
 ///
 /// Transaction state.
-/// Hold txn context and dGraph client for communication.
+/// Hold txn context and Dgraph client for communication.
 ///
 #[derive(Clone)]
 pub struct TxnState {
@@ -107,7 +107,7 @@ impl<S: IState> TxnVariant<S> {
     ///     }
     ///   }"#;
     ///
-    ///   let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///   let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///   let resp: Response = client.new_read_only_txn().query(q).await.expect("Query response");
     ///   let persons: Persons = resp.try_into().expect("Persons");
     /// }
@@ -165,7 +165,7 @@ impl<S: IState> TxnVariant<S> {
     ///     let mut vars = HashMap::new();
     ///     vars.insert("$a", "Alice");
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let resp: Response = client.new_read_only_txn().query_with_vars(q, vars).await.expect("query response");
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }

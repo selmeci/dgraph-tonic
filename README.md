@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/dgraph-tonic.svg)](https://crates.io/crates/dgraph-tonic)
 [![Docs](https://docs.rs/dgraph-tonic/badge.svg)](https://docs.rs/dgraph-tonic)
 
-dGraph async Rust client which communicates with the server using [gRPC](https://grpc.io/)  build with [Tonic](https://github.com/hyperium/tonic).
+Dgraph async Rust client which communicates with the server using [gRPC](https://grpc.io/)  build with [Tonic](https://github.com/hyperium/tonic).
 
 Before using this client, it is highly recommended to go through [tour.dgraph.io] and [docs.dgraph.io] to understand how to run and work with Dgraph.
 
@@ -38,7 +38,7 @@ dgraph-tonic = "0.3"
 
 Default feature is `dgraph-1-1`. 
 
-If you want use dGraph v1.0.x, add this dependency:
+If you want use Dgraph v1.0.x, add this dependency:
 
 ```toml
 [dependencies]
@@ -62,7 +62,7 @@ Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `M
 
 ### Create a client
 
-`Client` object can be initialised by passing a vector of `tonic::transport::Endpoints`. Connecting to multiple dGraph servers in the same cluster allows for better distribution of workload.
+`Client` object can be initialised by passing a vector of `tonic::transport::Endpoints`. Connecting to multiple Dgraph servers in the same cluster allows for better distribution of workload.
 
 The following code snippet shows it with just one endpoint.
 

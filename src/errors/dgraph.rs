@@ -1,7 +1,7 @@
 use failure::Fail;
 
 ///
-/// Possible dGraph errors
+/// Possible Dgraph errors
 ///
 #[derive(Debug, Fail)]
 pub enum Error {

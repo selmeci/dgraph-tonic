@@ -15,7 +15,7 @@ use crate::{
 };
 
 ///
-/// Async client for dGraph DB.
+/// Async client for Dgraph DB.
 ///
 #[derive(Clone, Debug)]
 pub struct Client {
@@ -55,7 +55,7 @@ impl Client {
     }
 
     ///
-    /// Create new dGraph client for interacting v DB and try to connect to given endpoints.
+    /// Create new Dgraph client for interacting v DB and try to connect to given endpoints.
     ///
     /// The client can be backed by multiple endpoints (to the same server, or multiple servers in a cluster).
     ///
@@ -76,7 +76,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     /// }
     /// ```
     ///
@@ -92,7 +92,7 @@ impl Client {
     }
 
     ///
-    /// Create new dGraph client authorized with SSL cert for interacting v DB and try to connect to given endpoints.
+    /// Create new Dgraph client authorized with SSL cert for interacting v DB and try to connect to given endpoints.
     ///
     /// The client can be backed by multiple endpoints (to the same server, or multiple servers in a cluster).
     ///
@@ -195,7 +195,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let op = Operation {
     ///         schema: "name: string @index(exact) .".into(),
     ///         ..Default::default()

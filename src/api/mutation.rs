@@ -5,7 +5,7 @@ use crate::Mutation;
 
 impl Mutation {
     ///
-    /// Create new dGraph Mutation object.
+    /// Create new Dgraph Mutation object.
     ///
     /// Mutation represent required modification of data in DB.
     /// Mutation provides two main ways to set data: JSON and RDF N-Quad.

@@ -16,12 +16,12 @@ use crate::Response;
 use crate::{Mutation, Request};
 
 ///
-/// In dGraph v1.0.x is mutation response represented as Assigned object
+/// In Dgraph v1.0.x is mutation response represented as Assigned object
 ///
 #[cfg(feature = "dgraph-1-0")]
 pub type MutationResponse = Assigned;
 ///
-/// In dGraph v1.1.x is mutation response represented as Response object
+/// In Dgraph v1.1.x is mutation response represented as Response object
 ///
 #[cfg(feature = "dgraph-1-1")]
 pub type MutationResponse = Response;
@@ -233,7 +233,7 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///    let mut txn = client.new_mutated_txn();
     ///    let result = txn.mutate(mu).await.expect("failed to create data");
     ///    txn.commit().await.expect("Txn is not commited");
@@ -283,7 +283,7 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///    let txn = client.new_mutated_txn();
     ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
     /// }
@@ -304,7 +304,7 @@ impl MutatedTxn {
     ///
     /// # Arguments
     ///
-    /// * `q`: dGraph query
+    /// * `q`: Dgraph query
     /// * `mu`: required mutations
     ///
     /// # Errors
@@ -328,7 +328,7 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -360,7 +360,7 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -389,7 +389,7 @@ impl MutatedTxn {
     ///
     /// # Arguments
     ///
-    /// * `q`: dGraph query
+    /// * `q`: Dgraph query
     /// * `mu`: required mutations
     /// * `vars`: query variables
     ///
@@ -417,7 +417,7 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -451,7 +451,7 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to dGraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
