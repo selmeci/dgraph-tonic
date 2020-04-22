@@ -63,12 +63,18 @@ Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `M
 
 ### Create a client
 
-`Client` object can be initialised by passing a vector of `tonic::transport::Endpoints`. Connecting to multiple Dgraph servers in the same cluster allows for better distribution of workload.
+`Client` object can be initialised by passing a one endpoint uri or vector of endpoints uris. Connecting to multiple Dgraph servers in the same cluster allows for better distribution of workload.
 
 The following code snippet shows it with just one endpoint.
 
 ```rust
-let client = Client::new(vec!["http://127.0.0.1:19080"]).await?;
+let client = Client::new("http://127.0.0.1:19080").await.expect("connected client");
+```
+
+or you can initialize new client with multiple endpoints.
+
+```rust
+let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"]).await.expect("connected client");
 ```
 
 Alternatively, secure client can be used:
@@ -79,7 +85,7 @@ let client = Client::new_with_tls_client_auth(
     "/path/ca.crt",
     "/path/client.crt",
     "/path/client.key",
-).await?;
+).await.expect("connected tls client");
 ```
 
 All certs must be in `PEM` format.
