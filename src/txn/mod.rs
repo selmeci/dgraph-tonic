@@ -226,7 +226,7 @@ mod tests {
     #[tokio::test]
     async fn mutate_and_commit_now() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let txn = client.new_mutated_txn();
+        let txn = client.new_mutated_txn().await.unwrap();
         let p = Person {
             uid: "_:alice".to_string(),
             name: "Alice".to_string(),
@@ -240,7 +240,7 @@ mod tests {
     #[tokio::test]
     async fn commit() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_mutated_txn();
+        let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
@@ -268,7 +268,7 @@ mod tests {
     #[tokio::test]
     async fn upsert() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_mutated_txn();
+        let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
@@ -297,7 +297,7 @@ mod tests {
           }"#;
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-        let txn = client.new_mutated_txn();
+        let txn = client.new_mutated_txn().await.unwrap();
         let response = txn.upsert(query, mu).await;
         assert!(response.is_ok())
     }
@@ -306,7 +306,7 @@ mod tests {
     #[tokio::test]
     async fn upsert_with_vars() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_mutated_txn();
+        let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
             uid: "_:alice".to_string(),
@@ -337,7 +337,7 @@ mod tests {
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
-        let txn = client.new_mutated_txn();
+        let txn = client.new_mutated_txn().await.unwrap();
         let response = txn.upsert_with_vars(query, vars, vec![mu]).await;
         assert!(response.is_ok())
     }
@@ -345,7 +345,7 @@ mod tests {
     #[tokio::test]
     async fn query() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_read_only_txn();
+        let mut txn = client.new_read_only_txn().await.unwrap();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
                 uid
@@ -360,7 +360,7 @@ mod tests {
     #[tokio::test]
     async fn query_with_vars() {
         let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
-        let mut txn = client.new_read_only_txn();
+        let mut txn = client.new_read_only_txn().await.unwrap();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
               uid

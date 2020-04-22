@@ -8,7 +8,7 @@ use crate::api::IDgraphClient;
 pub use crate::api::{
     Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext, Version,
 };
-pub use crate::client::Client;
+pub use crate::client::{Client, Endpoints, TlsClient};
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn, TxnState, TxnVariant};
 

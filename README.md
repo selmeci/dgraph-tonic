@@ -80,7 +80,7 @@ let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"])
 Alternatively, secure client can be used:
 
 ```rust
-let client = Client::new_with_tls_client_auth(
+let client = TlsClient::new(
     vec!["https://dgraph.io"],
     "/path/ca.crt",
     "/path/client.crt",
