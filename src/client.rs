@@ -15,6 +15,28 @@ use crate::{
 };
 
 ///
+/// Helper struct for endpoints input argument in new client function.
+/// Allows to create client with one or more endpoints.
+///
+pub struct Endpoints<S: TryInto<Uri>> {
+    endpoints: Vec<S>,
+}
+
+impl<S: TryInto<Uri>> From<Vec<S>> for Endpoints<S> {
+    fn from(endpoints: Vec<S>) -> Self {
+        Self { endpoints }
+    }
+}
+
+impl<S: TryInto<Uri>> From<S> for Endpoints<S> {
+    fn from(endpoint: S) -> Self {
+        Self {
+            endpoints: vec![endpoint],
+        }
+    }
+}
+
+///
 /// Async client for Dgraph DB.
 ///
 #[derive(Clone, Debug)]
@@ -23,9 +45,12 @@ pub struct Client {
 }
 
 impl Client {
-    fn balance_list<S: TryInto<Uri>>(endpoints: Vec<S>) -> Result<Vec<Uri>, Error> {
+    fn balance_list<S: TryInto<Uri>, E: Into<Endpoints<S>>>(
+        endpoints: E,
+    ) -> Result<Vec<Uri>, Error> {
+        let endpoints: Endpoints<S> = endpoints.into();
         let mut balance_list: Vec<Uri> = Vec::new();
-        for maybe_endpoint in endpoints {
+        for maybe_endpoint in endpoints.endpoints {
             let endpoint = match maybe_endpoint.try_into() {
                 Ok(endpoint) => endpoint,
                 Err(_err) => {
@@ -61,7 +86,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `endpoints` - Vector of possible endpoints
+    /// * `endpoints` - one endpoint or vector of endpoints
     ///
     /// # Errors
     ///
@@ -76,11 +101,14 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     // vector of endpoints
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     // one endpoint
+    ///     let client = Client::new("http://127.0.0.1:19080").await.expect("Connected to Dgraph");
     /// }
     /// ```
     ///
-    pub async fn new<S: TryInto<Uri>>(endpoints: Vec<S>) -> Result<Self, Error> {
+    pub async fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
         let balance_list = Self::balance_list(endpoints)?;
         let mut stubs = Vec::with_capacity(balance_list.len());
         for uri in balance_list {
@@ -98,7 +126,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `endpoints` - Vector of possible endpoints
+    /// * `endpoints` - one endpoint or vector of endpoints
     /// * `server_root_ca_cert` - path to server CA certificate
     /// * `client_cert` - path to client certificate
     /// * `client_key` - path to client private key
@@ -109,9 +137,34 @@ impl Client {
     /// * endpoints vector is empty
     /// * item in vector cannot by converted into Uri
     ///
+    /// # Example
     ///
-    pub async fn new_with_tls_client_auth<S: TryInto<Uri>>(
-        endpoints: Vec<S>,
+    /// ```
+    /// use dgraph_tonic::Client;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     // vector of endpoints
+    ///     let client = Client::new_with_tls_client_auth(
+    ///             vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"],
+    ///             "path/to/ca.crt",
+    ///             "path/to/client.crt",
+    ///             "path/to/ca.key")
+    ///         .await
+    ///         .expect("Connected to Dgraph");
+    ///     //one endpoint
+    ///     let client = Client::new_with_tls_client_auth(
+    ///             "http://127.0.0.1:19080",
+    ///             "path/to/ca.crt",
+    ///             "path/to/client.crt",
+    ///             "path/to/ca.key")
+    ///         .await
+    ///         .expect("Connected to Dgraph");
+    /// }
+    /// ```
+    ///
+    pub async fn new_with_tls_client_auth<S: TryInto<Uri>, E: Into<Endpoints<S>>>(
+        endpoints: E,
         server_root_ca_cert: impl AsRef<Path>,
         client_cert: impl AsRef<Path>,
         client_key: impl AsRef<Path>,
@@ -219,7 +272,7 @@ mod tests {
 
     #[tokio::test]
     async fn alter() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new("http://127.0.0.1:19080").await.unwrap();
         let op = Operation {
             schema: "name: string @index(exact) .".into(),
             ..Default::default()
