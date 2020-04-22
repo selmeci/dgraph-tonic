@@ -139,7 +139,7 @@ impl Client {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use dgraph_tonic::Client;
     ///
     /// #[tokio::main]
