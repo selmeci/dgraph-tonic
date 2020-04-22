@@ -1,3 +1,4 @@
+use crate::Status;
 use failure::Fail;
 
 ///
@@ -9,4 +10,6 @@ pub enum Error {
     InvalidEndpoint,
     #[fail(display = "Client: no endpoints defined")]
     NoEndpointsDefined,
+    #[fail(display = "Client: cannot do alter on DB")]
+    CannotAlter(Status),
 }
