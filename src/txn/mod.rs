@@ -353,8 +353,8 @@ mod tests {
         }"#;
         let response = txn.query(query).await;
         assert!(response.is_ok());
-        let json: UidJson = response.unwrap().try_into().unwrap();
-        assert_eq!(json.uids[0].uid, "0x1");
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
     }
 
     #[tokio::test]
@@ -370,7 +370,7 @@ mod tests {
         vars.insert("$a", "Alice");
         let response = txn.query_with_vars(query, vars).await;
         assert!(response.is_ok());
-        let json: UidJson = response.unwrap().try_into().unwrap();
-        assert_eq!(json.uids[0].uid, "0x1");
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
     }
 }
