@@ -233,8 +233,8 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
-    ///    let mut txn = client.new_mutated_txn();
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
+    ///    let mut txn = client.new_mutated_txn().await.expect("Txn");
     ///    let result = txn.mutate(mu).await.expect("failed to create data");
     ///    txn.commit().await.expect("Txn is not commited");
     /// }
@@ -283,8 +283,8 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
-    ///    let txn = client.new_mutated_txn();
+    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
+    ///    let txn = client.new_mutated_txn().await.expect("Txn");
     ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
     /// }
     /// ```
@@ -328,13 +328,13 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
+    ///     let txn = client.new_mutated_txn().await.expect("Txn");
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
     /// }
@@ -360,13 +360,13 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let txn = client.new_mutated_txn().await.expect("Txn");
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
     /// }
@@ -417,13 +417,13 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let txn = client.new_mutated_txn().await.expect("Txn");
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
     /// }
@@ -451,13 +451,13 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
+    ///     let txn = client.new_mutated_txn().await.expect("Txn");
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
     /// }

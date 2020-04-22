@@ -107,8 +107,9 @@ impl<S: IState> TxnVariant<S> {
     ///     }
     ///   }"#;
     ///
-    ///   let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
-    ///   let resp: Response = client.new_read_only_txn().query(q).await.expect("Query response");
+    ///   let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
+    ///   let mut txn = client.new_read_only_txn().await.expect("Txn");
+    ///   let resp: Response = txn.query(q).await.expect("Query response");
     ///   let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```
@@ -165,8 +166,9 @@ impl<S: IState> TxnVariant<S> {
     ///     let mut vars = HashMap::new();
     ///     vars.insert("$a", "Alice");
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
-    ///     let resp: Response = client.new_read_only_txn().query_with_vars(q, vars).await.expect("query response");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Connected to Dgraph");
+    ///     let mut txn = client.new_read_only_txn().await.expect("Txn");
+    ///     let resp: Response = txn.query_with_vars(q, vars).await.expect("query response");
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
@@ -225,7 +227,7 @@ mod tests {
 
     #[tokio::test]
     async fn mutate_and_commit_now() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let txn = client.new_mutated_txn().await.unwrap();
         let p = Person {
             uid: "_:alice".to_string(),
@@ -239,7 +241,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
@@ -267,7 +269,7 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
@@ -305,7 +307,7 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert_with_vars() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let mut txn = client.new_mutated_txn().await.unwrap();
         //first mutation
         let p = Person {
@@ -344,7 +346,7 @@ mod tests {
 
     #[tokio::test]
     async fn query() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let mut txn = client.new_read_only_txn().await.unwrap();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -359,7 +361,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_with_vars() {
-        let client = Client::new(vec!["http://127.0.0.1:19080"]).await.unwrap();
+        let client = Client::new(vec!["http://127.0.0.1:19080"]).unwrap();
         let mut txn = client.new_read_only_txn().await.unwrap();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
