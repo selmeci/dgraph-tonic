@@ -185,10 +185,23 @@ impl<S: IClient> ClientVariant<S> {
     ///
     /// ```
     /// use dgraph_tonic::{Client, Operation};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
+    ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "name: string @index(exact) .".into(),
     ///         ..Default::default()
