@@ -363,7 +363,7 @@ async fn main() {
 
 ### Access Control Lists
 
-This is Dgraph enterprise feature which can be activated with:
+This enterprise Dgraph feature which can be activated with:
 
 ```toml
 [dependencies]
@@ -372,7 +372,7 @@ dgraph-tonic = { version = "0.4", features = ["acl"] }
 
 [Access Control List (ACL)](https://dgraph.io/docs/enterprise-features/#access-control-lists) provides access protection to your data stored in Dgraph. When the ACL feature is turned on, a client must authenticate with a username and password before executing any transactions, and is only allowed to access the data permitted by the ACL rules.
 
-Both, `Client` and `TlsClient` can be logged in wit `login(user_id,password)` function. This function consume original client and return instance of `AclClient` which allows token refreshing with `refresh_login()` function.
+Both, `Client` and `TlsClient` can be logged in with `login(user_id,password)` function. Original client is consumed and return instance of `AclClient` which allows token refreshing with `refresh_login()` function.
 
 ```rust
 use dgraph_tonic::Client;
