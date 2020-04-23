@@ -4,6 +4,8 @@ use failure::Error;
 use http::Uri;
 use rand::Rng;
 
+#[cfg(feature = "acl")]
+pub use crate::client::default::LazyDefaultChannel;
 pub use crate::client::endpoints::Endpoints;
 use crate::errors::ClientError;
 use crate::stub::Stub;
@@ -206,10 +208,23 @@ mod tests {
     use crate::Client;
 
     use super::*;
+    #[cfg(feature = "acl")]
+    use crate::client::LazyDefaultChannel;
+
+    #[cfg(not(feature = "acl"))]
+    async fn client() -> Client {
+        Client::new("http://127.0.0.1:19080").unwrap()
+    }
+
+    #[cfg(feature = "acl")]
+    async fn client() -> AclClient<LazyDefaultChannel> {
+        let default = Client::new("http://127.0.0.1:19080").unwrap();
+        default.login("groot", "password").await.unwrap()
+    }
 
     #[tokio::test]
     async fn alter() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let op = Operation {
             schema: "name: string @index(exact) .".into(),
             ..Default::default()

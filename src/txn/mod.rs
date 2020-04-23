@@ -208,7 +208,20 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::{Client, Mutation};
+    #[cfg(feature = "acl")]
+    use crate::client::LazyDefaultChannel;
+    use crate::{AclClient, Client, Mutation};
+
+    #[cfg(not(feature = "acl"))]
+    async fn client() -> Client {
+        Client::new("http://127.0.0.1:19080").unwrap()
+    }
+
+    #[cfg(feature = "acl")]
+    async fn client() -> AclClient<LazyDefaultChannel> {
+        let default = Client::new("http://127.0.0.1:19080").unwrap();
+        default.login("groot", "password").await.unwrap()
+    }
 
     #[derive(Serialize, Deserialize, Default, Debug)]
     struct Person {
@@ -228,7 +241,7 @@ mod tests {
 
     #[tokio::test]
     async fn mutate_and_commit_now() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let txn = client.new_mutated_txn();
         let p = Person {
             uid: "_:alice".to_string(),
@@ -242,7 +255,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -270,7 +283,7 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -308,7 +321,7 @@ mod tests {
     #[cfg(feature = "dgraph-1-1")]
     #[tokio::test]
     async fn upsert_with_vars() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -347,7 +360,7 @@ mod tests {
 
     #[tokio::test]
     async fn query() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -362,7 +375,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_with_vars() {
-        let client = Client::new("http://127.0.0.1:19080").unwrap();
+        let client = client().await;
         let mut txn = client.new_read_only_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
