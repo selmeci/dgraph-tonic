@@ -210,7 +210,9 @@ mod tests {
 
     #[cfg(feature = "acl")]
     use crate::client::LazyDefaultChannel;
-    use crate::{AclClient, Client, Mutation};
+    #[cfg(feature = "acl")]
+    use crate::AclClient;
+    use crate::{Client, Mutation};
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {
