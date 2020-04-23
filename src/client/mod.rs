@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
+use crate::api::Version;
 #[cfg(feature = "acl")]
 pub use crate::client::acl::AclClient;
 pub use crate::client::default::Client;
@@ -201,6 +202,32 @@ impl<S: IClient> ClientVariant<S> {
         let mut stub = self.any_stub();
         stub.alter(op).await
     }
+
+    ///
+    /// Check DB version
+    ///
+    /// # Errors
+    ///
+    /// * gRPC error
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use dgraph_tonic::{Client, Operation};
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
+    ///     let version = client.check_version().await.expect("Version");
+    ///     println!("{:#?}", version);
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub async fn check_version(&self) -> Result<Version, Error> {
+        let mut stub = self.any_stub();
+        stub.check_version().await
+    }
 }
 
 #[cfg(test)]
@@ -230,6 +257,13 @@ mod tests {
             ..Default::default()
         };
         let response = client.alter(op).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn check_version() {
+        let client = client().await;
+        let response = client.check_version().await;
         assert!(response.is_ok());
     }
 }

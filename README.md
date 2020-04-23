@@ -26,6 +26,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
   - [Running a Conditional Upsert](#running-a-conditional-upsert)
   - [Commit a transaction](#commit-a-transaction)
   - [Access Control Lists](#access-control-lists)
+  - [Check version](#check-version)
 - [Examples](#examples)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
@@ -386,6 +387,28 @@ async fn main() {
   logged_in_client.refresh_login().await.except("Refreshed access token");
 }
 
+```
+
+### Check version
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let version = client.check_version().await.expect("Version");
+  println!("{:#?}", version);
+}
+
+```
+
+Output:
+
+```console
+Version {
+    tag: "v20.03.0",
+}
 ```
 
 ## Examples
