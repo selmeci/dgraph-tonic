@@ -5,6 +5,20 @@ services:
 jobs:
   fast_finish: true
   include:
+    - name: Check simple example
+      rust: stable
+      script:
+        - cd examples/simple
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
+        - cargo fmt -- --check
+        - cargo check
+    - name: Check tls example
+      rust: stable
+      script:
+        - cd examples/tls
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
+        - cargo fmt -- --check
+        - cargo check
     - name: Dgraph 1.0 tests
       rust: stable
       before_install:
