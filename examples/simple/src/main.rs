@@ -142,9 +142,7 @@ async fn query_data(client: &Client) {
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new(vec!["http://localhost:9080"])
-        .await
-        .expect("connected client");
+    let client = Client::new(vec!["http://localhost:9080"]).expect("connected client");
     drop_all(&client).await;
     set_schema(&client).await;
     create_data(&client).await;

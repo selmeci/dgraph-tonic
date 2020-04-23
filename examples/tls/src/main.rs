@@ -1,9 +1,9 @@
 use chrono::prelude::*;
-use dgraph_tonic::{Client, Mutation, Operation};
+use dgraph_tonic::{Mutation, Operation, TlsClient};
 use maplit::hashmap;
 use serde::{Deserialize, Serialize};
 
-async fn drop_all(client: &Client) {
+async fn drop_all(client: &TlsClient) {
     let op = Operation {
         drop_all: true,
         ..Default::default()
@@ -11,7 +11,7 @@ async fn drop_all(client: &Client) {
     client.alter(op).await.expect("dropped all");
 }
 
-async fn set_schema(client: &Client) {
+async fn set_schema(client: &TlsClient) {
     let schema = r#"
         name: string @index(exact) .
         age: int .
@@ -59,7 +59,7 @@ struct Person {
 }
 
 // Create data using JSON.
-async fn create_data(client: &Client) {
+async fn create_data(client: &TlsClient) {
     let mut txn = client.new_mutated_txn();
     let p = Person {
         uid: "_:alice".into(),
@@ -107,7 +107,7 @@ struct All {
 }
 
 // Query for data.
-async fn query_data(client: &Client) {
+async fn query_data(client: &TlsClient) {
     let query = r#"
         query all($a: string) {
             all(func: eq(name, $a)) {
@@ -142,13 +142,17 @@ async fn query_data(client: &Client) {
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new_with_tls_client_auth(
-        vec!["http://localhost:9080"],
-        "tls/ca.crt",
-        "tls/client.user.key",
-        "tls/client.user.crt",
+    let server_root_ca_cert = tokio::fs::read("path/to/ca.crt").await.expect("CA cert");
+    let client_cert = tokio::fs::read("path/to/client.crt")
+        .await
+        .expect("Client cert");
+    let client_key = tokio::fs::read("path/to/ca.key").await.expect("Client key");
+    let client = TlsClient::new(
+        "http://localhost:9080",
+        server_root_ca_cert,
+        client_cert,
+        client_key,
     )
-    .await
     .expect("connected client");
     drop_all(&client).await;
     set_schema(&client).await;
