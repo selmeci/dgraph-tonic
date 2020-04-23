@@ -3,32 +3,59 @@ use std::convert::TryInto;
 use failure::Error;
 use http::Uri;
 use rand::Rng;
-use tonic::transport::Channel;
-use tonic::Status;
 
-use crate::api::Jwt;
 pub use crate::client::endpoints::Endpoints;
 use crate::errors::ClientError;
 use crate::stub::Stub;
 use crate::{
-    BestEffortTxn, DgraphClient, IDgraphClient, LoginRequest, MutatedTxn, Operation, Payload,
-    ReadOnlyTxn, Result, Txn,
+    BestEffortTxn, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn, Result, Txn,
 };
 use async_trait::async_trait;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::sync::Mutex;
 
+#[cfg(feature = "acl")]
+pub use crate::client::acl::AclClient;
 pub use crate::client::default::Client;
+pub(crate) use crate::client::lazy::ILazyClient;
+use crate::client::lazy::LazyChannel;
+#[cfg(feature = "tls")]
 pub use crate::client::tls::TlsClient;
 
+#[cfg(feature = "acl")]
+mod acl;
 mod default;
 mod endpoints;
+mod lazy;
+#[cfg(feature = "tls")]
 mod tls;
 
+pub(crate) fn rnd_item<T: Clone>(items: &Vec<T>) -> T {
+    let mut rng = rand::thread_rng();
+    let i = rng.gen_range(0, items.len());
+    if let Some(item) = items.get(i) {
+        item.to_owned()
+    } else {
+        unreachable!()
+    }
+}
+
+///
+/// Marker for client variant implementation
+///
 #[async_trait]
-pub trait IClient: Debug {
-    async fn channel(&self, state: &ClientState) -> Result<Channel, Error>;
+pub trait IClient: Debug + Send + Sync {
+    type Client: ILazyClient<Channel = Self::Channel>;
+    type Channel: LazyChannel;
+    ///
+    /// Return lazy Dgraph gRPC client
+    ///
+    fn client(&self) -> Self::Client;
+
+    ///
+    /// consume self and return all lazy clients
+    ///
+    fn clients(self) -> Vec<Self::Client>;
 }
 
 ///
@@ -36,35 +63,14 @@ pub trait IClient: Debug {
 ///
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct ClientState {
-    endpoints: Vec<Uri>,
-    access_jwt: Mutex<Option<String>>,
-    refresh_jwt: Mutex<Option<String>>,
-}
+pub struct ClientState;
 
 impl ClientState {
     ///
     /// Create new client state with given Dgraph endpoints
     ///
-    pub fn new(endpoints: Vec<Uri>) -> Self {
-        Self {
-            endpoints,
-            access_jwt: Mutex::new(None),
-            refresh_jwt: Mutex::new(None),
-        }
-    }
-
-    ///
-    /// Return one of stored uris
-    ///
-    pub fn any_endpoint(&self) -> Uri {
-        let mut rng = rand::thread_rng();
-        let i = rng.gen_range(0, self.endpoints.len());
-        if let Some(uri) = self.endpoints.get(i) {
-            uri.clone()
-        } else {
-            unreachable!()
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -115,18 +121,18 @@ impl<S: IClient> ClientVariant<S> {
     }
 
     ///
-    /// Return new stub with channel implemented according to actual client variant.
+    /// Return new stub with grpc client implemented according to actual variant.
     ///
-    async fn any_stub(&self) -> Result<Stub, Error> {
-        let channel = self.extra.channel(&self.state).await?;
-        Ok(Stub::new(DgraphClient::new(channel)))
+    ///
+    fn any_stub(&self) -> Stub<S::Client> {
+        Stub::new(self.extra.client())
     }
 
     ///
     /// Return transaction in default state, which can be specialized into ReadOnly or Mutated
     ///
-    pub async fn new_txn(&self) -> Result<Txn, Error> {
-        Ok(Txn::new(self.any_stub().await?))
+    pub fn new_txn(&self) -> Txn<S::Client> {
+        Txn::new(self.any_stub())
     }
 
     ///
@@ -135,8 +141,8 @@ impl<S: IClient> ClientVariant<S> {
     /// Read-only transactions are useful to increase read speed because they can circumvent the
     /// usual consensus protocol.
     ///
-    pub async fn new_read_only_txn(&self) -> Result<ReadOnlyTxn, Error> {
-        Ok(self.new_txn().await?.read_only())
+    pub fn new_read_only_txn(&self) -> ReadOnlyTxn<S::Client> {
+        self.new_txn().read_only()
     }
 
     ///
@@ -147,15 +153,15 @@ impl<S: IClient> ClientVariant<S> {
     /// of outbound requests to Zero. This may yield improved latencies in read-bound workloads where
     /// linearizable reads are not strictly needed.
     ///
-    pub async fn new_best_effort_txn(&self) -> Result<BestEffortTxn, Error> {
-        Ok(self.new_read_only_txn().await?.best_effort())
+    pub fn new_best_effort_txn(&self) -> BestEffortTxn<S::Client> {
+        self.new_read_only_txn().best_effort()
     }
 
     ///
     /// Create new transaction which can do mutate, commit and discard operations
     ///
-    pub async fn new_mutated_txn(&self) -> Result<MutatedTxn, Error> {
-        Ok(self.new_txn().await?.mutated())
+    pub fn new_mutated_txn(&self) -> MutatedTxn<S::Client> {
+        self.new_txn().mutated()
     }
 
     ///
@@ -179,7 +185,7 @@ impl<S: IClient> ClientVariant<S> {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let op = Operation {
     ///         schema: "name: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -190,27 +196,8 @@ impl<S: IClient> ClientVariant<S> {
     /// ```
     ///
     pub async fn alter(&self, op: Operation) -> Result<Payload, Error> {
-        let mut stub = self.any_stub().await?;
-        match stub.alter(op).await {
-            Ok(payload) => Ok(payload),
-            Err(status) => Err(ClientError::CannotAlter(status).into()),
-        }
-    }
-
-    pub async fn login<T: Into<String> + Default>(
-        &self,
-        user_id: Option<T>,
-        password: Option<T>,
-        refresh_token: Option<T>,
-    ) -> Result<Jwt, Status> {
         let mut stub = self.any_stub();
-        let login = LoginRequest {
-            userid: user_id.unwrap_or_default().into(),
-            password: password.unwrap_or_default().into(),
-            refresh_token: refresh_token.unwrap_or_default().into(),
-            ..Default::default()
-        };
-        unimplemented!()
+        stub.alter(op).await
     }
 }
 
@@ -222,7 +209,7 @@ mod tests {
 
     #[tokio::test]
     async fn alter() {
-        let client = Client::new("http://127.0.0.1:19080").await.unwrap();
+        let client = Client::new("http://127.0.0.1:19080").unwrap();
         let op = Operation {
             schema: "name: string @index(exact) .".into(),
             ..Default::default()

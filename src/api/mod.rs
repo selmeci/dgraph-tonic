@@ -14,6 +14,7 @@ mod v1_0_x;
 mod v1_1_x;
 
 #[async_trait]
+#[doc(hidden)]
 pub(crate) trait IDgraphClient: Clone + Sized {
     async fn login(&mut self, login: LoginRequest) -> Result<Response, Error>;
 

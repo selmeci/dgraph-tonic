@@ -33,5 +33,8 @@ tonic-build = "0.2"
 
 [features]
 default = ["dgraph-1-1"]
+all = ["acl", "tls"]
+acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []
+tls = []

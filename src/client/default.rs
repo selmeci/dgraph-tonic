@@ -1,4 +1,5 @@
-use crate::client::{ClientState, ClientVariant, IClient};
+use crate::client::lazy::{LazyChannel, LazyClient};
+use crate::client::{rnd_item, ClientState, ClientVariant, IClient};
 use crate::{Endpoint, Endpoints, Result};
 use async_trait::async_trait;
 use failure::Error;
@@ -7,17 +8,55 @@ use std::convert::TryInto;
 use tonic::transport::Channel;
 
 ///
+/// Lazy initialization of gRPC channel
+///
+#[derive(Clone, Debug)]
+#[doc(hidden)]
+pub struct LazyDefaultChannel {
+    uri: Uri,
+    channel: Option<Channel>,
+}
+
+impl LazyDefaultChannel {
+    fn new(uri: Uri) -> Self {
+        Self { uri, channel: None }
+    }
+}
+
+#[async_trait]
+impl LazyChannel for LazyDefaultChannel {
+    async fn channel(&mut self) -> Result<Channel, Error> {
+        if let Some(channel) = &self.channel {
+            return Ok(channel.to_owned());
+        } else {
+            let endpoint: Endpoint = self.uri.to_owned().into();
+            let channel = endpoint.connect().await?;
+            self.channel.replace(channel.to_owned());
+            Ok(channel)
+        }
+    }
+}
+
+///
 /// Inner state for default Client
 ///
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct Default;
+pub struct Default {
+    clients: Vec<LazyClient<LazyDefaultChannel>>,
+}
 
 #[async_trait]
 impl IClient for Default {
-    async fn channel(&self, state: &ClientState) -> Result<Channel, Error> {
-        let endpoint: Endpoint = state.any_endpoint().into();
-        Ok(endpoint.connect().await?)
+    type Client = LazyClient<Self::Channel>;
+    type Channel = LazyDefaultChannel;
+
+    fn client(&self) -> Self::Client {
+        rnd_item(&self.clients)
+    }
+
+    fn clients(self) -> Vec<Self::Client> {
+        self.clients
     }
 }
 
@@ -46,19 +85,20 @@ impl Client {
     /// ```
     /// use dgraph_tonic::Client;
     ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     // vector of endpoints
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
-    ///     // one endpoint
-    ///     let client = Client::new("http://127.0.0.1:19080").await.expect("Connected to Dgraph");
-    /// }
+    /// // vector of endpoints
+    /// let client = Client::new(vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"]).expect("Dgraph client");
+    /// // one endpoint
+    /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub async fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
-        Ok(Self {
-            state: Box::new(ClientState::new(Self::balance_list(endpoints)?)),
-            extra: Default {},
-        })
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
+        let extra = Default {
+            clients: Self::balance_list(endpoints)?
+                .into_iter()
+                .map(|uri| LazyClient::new(LazyDefaultChannel::new(uri)))
+                .collect(),
+        };
+        let state = Box::new(ClientState::new());
+        Ok(Self { state, extra })
     }
 }

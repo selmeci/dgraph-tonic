@@ -2,6 +2,7 @@ use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+use crate::client::ILazyClient;
 use crate::txn::read_only::ReadOnly;
 use crate::txn::{IState, ReadOnlyTxn, TxnState, TxnVariant};
 use crate::Request;
@@ -10,17 +11,17 @@ use crate::Request;
 /// Inner state for best effort transaction
 ///
 #[derive(Clone, Debug)]
-pub struct BestEffort {
-    read_only: ReadOnly,
+pub struct BestEffort<C: ILazyClient> {
+    read_only: ReadOnly<C>,
 }
 
-impl IState for BestEffort {
+impl<C: ILazyClient> IState for BestEffort<C> {
     ///
     /// Update read only query with best_effort flag
     ///
-    fn query_request(
+    fn query_request<S: ILazyClient>(
         &self,
-        state: &TxnState,
+        state: &TxnState<S>,
         query: String,
         vars: HashMap<String, String, RandomState>,
     ) -> Request {
@@ -33,13 +34,13 @@ impl IState for BestEffort {
 ///
 /// Best effort variant of read only transaction
 ///
-pub type BestEffortTxn = TxnVariant<BestEffort>;
+pub type BestEffortTxn<C> = TxnVariant<BestEffort<C>, C>;
 
-impl ReadOnlyTxn {
+impl<C: ILazyClient> ReadOnlyTxn<C> {
     ///
     /// Create best effort transaction from read only state
     ///
-    pub fn best_effort(self) -> BestEffortTxn {
+    pub fn best_effort(self) -> BestEffortTxn<C> {
         TxnVariant {
             state: self.state,
             extra: BestEffort {
