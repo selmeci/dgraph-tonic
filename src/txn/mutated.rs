@@ -5,6 +5,7 @@ use std::hash::Hash;
 
 use async_trait::async_trait;
 
+use crate::client::ILazyClient;
 use crate::errors::DgraphError;
 use crate::txn::default::Base;
 use crate::txn::{IState, Txn, TxnState, TxnVariant};
@@ -30,8 +31,8 @@ pub type MutationResponse = Response;
 /// Inner state for transaction which can modify data in DB.
 ///
 #[derive(Clone, Debug)]
-pub struct Mutated {
-    base: Base,
+pub struct Mutated<C: ILazyClient> {
+    base: Base<C>,
     mutated: bool,
 }
 
@@ -58,13 +59,13 @@ impl From<Mutation> for UpsertMutation {
 }
 
 #[async_trait]
-impl IState for Mutated {
+impl<C: ILazyClient> IState for Mutated<C> {
     ///
     /// Do same query like default transaction
     ///
-    fn query_request(
+    fn query_request<S: ILazyClient>(
         &self,
-        state: &TxnState,
+        state: &TxnState<S>,
         query: String,
         vars: HashMap<String, String, RandomState>,
     ) -> Request {
@@ -75,13 +76,13 @@ impl IState for Mutated {
 ///
 /// Transaction variant with mutations support.
 ///
-pub type MutatedTxn = TxnVariant<Mutated>;
+pub type MutatedTxn<C> = TxnVariant<Mutated<C>, C>;
 
-impl Txn {
+impl<C: ILazyClient> Txn<C> {
     ///
     /// Create new transaction for mutation operations.
     ///
-    pub fn mutated(self) -> MutatedTxn {
+    pub fn mutated(self) -> MutatedTxn<C> {
         TxnVariant {
             state: self.state,
             extra: Mutated {
@@ -92,7 +93,7 @@ impl Txn {
     }
 }
 
-impl MutatedTxn {
+impl<C: ILazyClient> MutatedTxn<C> {
     #[cfg(feature = "dgraph-1-0")]
     async fn do_mutation<Q, K, V>(
         &mut self,
@@ -112,7 +113,7 @@ impl MutatedTxn {
         let assigned = match self.client.mutate(mu).await {
             Ok(assigned) => assigned,
             Err(err) => {
-                return Err(DgraphError::GrpcError(err.to_string()));
+                return Err(DgraphError::GrpcError(err));
             }
         };
         match assigned.context.as_ref() {
@@ -153,7 +154,7 @@ impl MutatedTxn {
         let response = match self.client.do_request(request).await {
             Ok(response) => response,
             Err(err) => {
-                return Err(DgraphError::GrpcError(err.to_string()));
+                return Err(DgraphError::GrpcError(err));
             }
         };
         match response.txn.as_ref() {
@@ -173,7 +174,7 @@ impl MutatedTxn {
         let txn = state.context;
         match client.commit_or_abort(txn).await {
             Ok(_txn_context) => Ok(()),
-            Err(err) => Err(DgraphError::GrpcError(err.to_string())),
+            Err(err) => Err(DgraphError::GrpcError(err)),
         }
     }
 
@@ -217,6 +218,19 @@ impl MutatedTxn {
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
     /// use serde::Serialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     ///#[derive(Serialize)]
     /// struct Person {
@@ -233,7 +247,7 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///    let client = client().await;
     ///    let mut txn = client.new_mutated_txn();
     ///    let result = txn.mutate(mu).await.expect("failed to create data");
     ///    txn.commit().await.expect("Txn is not commited");
@@ -266,6 +280,19 @@ impl MutatedTxn {
     /// ```
     /// use dgraph_tonic::{Client, Mutation};
     /// use serde::Serialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     ///#[derive(Serialize)]
     /// struct Person {
@@ -283,7 +310,7 @@ impl MutatedTxn {
     ///    let mut mu = Mutation::new();
     ///    mu.set_set_json(&p).expect("JSON");
     ///
-    ///    let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///    let client = client().await;
     ///    let txn = client.new_mutated_txn();
     ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
     /// }
@@ -317,6 +344,19 @@ impl MutatedTxn {
     /// Upsert with one mutation
     /// ```
     /// use dgraph_tonic::{Client, Mutation, Operation};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -328,7 +368,7 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -344,6 +384,19 @@ impl MutatedTxn {
     /// ```
     /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -360,7 +413,7 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -404,6 +457,19 @@ impl MutatedTxn {
     /// ```
     /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -417,7 +483,7 @@ impl MutatedTxn {
     ///     let mut mu = Mutation::new();
     ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
@@ -433,6 +499,19 @@ impl MutatedTxn {
     /// ```
     /// use dgraph_tonic::{Client, Mutation, Operation};
     /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -451,7 +530,7 @@ impl MutatedTxn {
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
     ///     mu_2.set_cond("@if(eq(len(user), 2))");    
     ///
-    ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).await.expect("Connected to Dgraph");
+    ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()

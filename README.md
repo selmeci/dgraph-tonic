@@ -17,6 +17,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Supported Versions](#supported-versions)
 - [Using a client](#using-a-client)
   - [Create a client](#create-a-client)
+  - [Create a TLS client](#create-a-tls-client)
   - [Alter the database](#alter-the-database)
   - [Create a transaction](#create-a-transaction)
   - [Run a mutation](#run-a-mutation)
@@ -24,6 +25,8 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
   - [Running an Upsert: Query + Mutation](#running-an-upsert-query--mutation)
   - [Running a Conditional Upsert](#running-a-conditional-upsert)
   - [Commit a transaction](#commit-a-transaction)
+  - [Access Control Lists](#access-control-lists)
+  - [Check version](#check-version)
 - [Examples](#examples)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
@@ -34,17 +37,32 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph-tonic = "0.3"
+dgraph-tonic = "0.4"
 ```
 
-Default feature is `dgraph-1-1`. 
+Default feature is `dgraph-1-1`.
 
-If you want use Dgraph v1.0.x, add this dependency:
+All avaiable features can be activeted with:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.3", features = ["dgraph-1-0"], default-features = false }
+dgraph-tonic = {version = "0.4", features = ["all"]}
 ```
+
+If you want to use Dgraph v1.0.x, add this dependency:
+
+```toml
+[dependencies]
+dgraph-tonic = { version = "0.4", features = ["dgraph-1-0"], default-features = false }
+```
+
+Supported features:
+
+- *acl*: Enable client with authentification.
+- *all*: enable tls and acl feature with dgraph-1-1
+- *dgraph-1-0*: Enable client for Dgraph v1.0.x
+- *dgraph-1-1*: Enable client for Dgraph v1.1.x and v20.0.x
+- *tls*: Enable secured TlsClient
 
 ## Supported Versions
 
@@ -55,7 +73,7 @@ Depending on the version of Dgraph that you are connecting to, you will have to 
 |     1.0.X      |    *dgraph-1-0*   |
 |     1.1.X      |    *dgraph-1-1*   |
 |     1.2.X      |    *dgraph-1-1*   |
-|    20.03.0     |    *dgraph-1-1*   |
+|    20.03.X     |    *dgraph-1-1*   |
 
 Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
 
@@ -68,38 +86,59 @@ Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `M
 The following code snippet shows it with just one endpoint.
 
 ```rust
-let client = Client::new("http://127.0.0.1:19080").await.expect("connected client");
+let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
 ```
 
-or you can initialize new client with multiple endpoints.
+or you can initialize new client with a multiple endpoints. Client cannot be create with empty endpoints vector.
 
 ```rust
-let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"]).await.expect("connected client");
+let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"]).expect("Dgraph client");
 ```
 
-Alternatively, secure client can be used:
+### Create a TLS client
+
+Alternatively, secure tls client is avaible in `tls` feature:
+
+```toml
+[dependencies]
+dgraph-tonic = { version = "0.4", features = ["tls"] }
+```
 
 ```rust
-let client = Client::new_with_tls_client_auth(
-    vec!["https://dgraph.io"],
-    "/path/ca.crt",
-    "/path/client.crt",
-    "/path/client.key",
-).await.expect("connected tls client");
+use dgraph_tonic::TlsClient;
+
+#[tokio::main]
+async fn main() {
+  let server_root_ca_cert = tokio::fs::read("path/to/ca.crt").await.expect("CA cert");
+  let client_cert = tokio::fs::read("path/to/client.crt").await.expect("Client cert");
+  let client_key = tokio::fs::read("path/to/ca.key".await.expect("Client key"));
+  let client = TlsClient::new(
+    vec!["http://192.168.0.10:19080", "http://192.168.0.11:19080"],
+    server_root_ca_cert,
+    client_cert,
+    client_key)
+  .expect("Dgraph TLS client");
+}
 ```
 
 All certs must be in `PEM` format.
 
 ### Alter the database
 
-To set the schema, create an instance of `dgraph::Operation` and use the `Alter` endpoint.
+To set the schema, create an instance of `Operation` and use the `Alter` endpoint.
 
 ```rust
-let op = Operation {
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let op = Operation {
     schema: "name: string @index(exact) .".into(),
     ..Default::default()
-};
-let response = client.alter(op).await?;
+  };
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let response = client.alter(op).await.expect("Schema set");
+}
 ```
 
 `Operation` contains other fields as well, including `DropAttr` and `DropAll`. `DropAll` is useful if you wish to discard all the data, and start from a clean slate, without bringing the instance down. `DropAttr` is used to drop all the data related to a predicate.
@@ -113,13 +152,20 @@ Transaction is modeled with [The Typestate Pattern in Rust](http://cliffle.com/b
 - *BestEffort*: Read-only queries can optionally be set as best-effort. Using this flag will ask the Dgraph Alpha to try to get timestamps from memory on a best-effort basis to reduce the number of outbound requests to Zero. This may yield improved latencies in read-bound workloads where linearizable reads are not strictly needed. Can permorm `query` and `query_with_vars` actions.
 - *Mutated*: can perform all actions as default transaction and can modify data in DB. Can be created only from default transaction.
 
-Client provides several factory methods for transactions. Create new transaction incurs no network overhead.
+Client provides several factory methods for transactions. This operations incur no network overhead.
 
 ```rust
-let txn = client.new_txn();
-let read_only = client.read_only();
-let best_effort = client.best_effort();
-let mutated = client.mutated();
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let txn = client.new_txn();
+  let read_only = client.new_read_only_txn();
+  let best_effort = client.new_best_effort_txn();
+  let mutated = client.new_mutated_txn();
+}
+
 ```
 
 Only for Mutated transaction must be always called `txn.dicard().await?` or `txn.commit().await?` function before txn variable is dropped.
@@ -131,29 +177,35 @@ Only for Mutated transaction must be always called `txn.dicard().await?` or `txn
 Example:
 
 ```rust
+use dgraph_tonic::Client;
+use serde::{Serialize, Deserialize};
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 struct Person {
   uid: String,
   name: String,
 }
 
-let p = Person {
-  uid:  "_:alice".into(),
-  name: "Alice".into(),
-};
-
-let mut mu = Mutation::new();
-mu.set_set_json(&p)?;
-
-let mut txn = client.new_mutated_txn();
-let assigned = txn.mutate(mu).await.expect("failed to create data");
+#[tokio::main]
+async fn main() {
+  let p = Person {
+    uid:  "_:alice".into(),
+    name: "Alice".into(),
+  };
+  let mut mu = Mutation::new();
+  mu.set_set_json(&p).expect("JSON");
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_mutated_txn();
+  let response = txn.mutate(mu).await.expect("failed to create data");
+  txn.commit().await.expect("Transaction is commited");
+}
 ```
 
 Note: Only API breakage from *dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
 
 Sometimes, you only want to commit a mutation, without querying anything further. In such cases, you can use `txn.mutate_and_commit_now(mu)` to indicate that the mutation must be immediately committed. Txn object is being consumed in this case.
 
-`Mutation::with_ignored_index_conflict()` can be applied on a `Mutation` object to not run conflict detection over the index, which would decrease the number of transaction conflicts and aborts. However, this would come at the cost of potentially inconsistent upsert operations. This flag is avaliable only in *dgraph-1-0*.
+In `dgraph-1-0` a `Mutation::with_ignored_index_conflict()` can be applied on a `Mutation` object to not run conflict detection over the index, which would decrease the number of transaction conflicts and aborts. However, this would come at the cost of potentially inconsistent upsert operations. This flag is avaliable only in *dgraph-1-0*.
 
 ### Run a query
 
@@ -174,42 +226,60 @@ query all($a: string) {
 `Response` provides function `try_into()` which can be used for transforming returned JSON into coresponding struct object which implements serde `Deserialize` traits.
 
 ```rust
+use dgraph_tonic::Client;
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct Person {
+  uid: String,
+  name: String,
+}
+
 #[derive(Deserialize, Debug)]
 struct Persons {
   all: Vec<Person>
 }
 
-let q = r#"query all($a: string) {
+#[tokio::main]
+async fn main() {
+  let q = r#"query all($a: string) {
     all(func: eq(name, $a)) {
       uid
       name
     }
   }"#;
-
-let mut vars = HashMap::new();
-vars.insert("$a", "Alice");
-
-let resp: Response = client.new_read_only_txn().query_with_vars(q, vars).await.expect("query");
-let persons: Persons = resp.try_into().except("Persons");
-println!("Persons: {:?}", persons);
+  let mut vars = HashMap::new();
+  vars.insert("$a", "Alice");
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_read_only_txn();
+  let response = txn.query_with_vars(q, vars).await.expect("Response");
+  let persons: Persons = resp.try_into().except("Persons");
+  println!("Persons: {:?}", persons);
+}
 ```
 
 When running a schema query, the schema response is found in the `Schema` field of `Response`.
 
 ```rust
-let q = r#"schema(pred: [name]) {
-  type
-  index
-  reverse
-  tokenizer
-  list
-  count
-  upsert
-  lang
-}"#.to_string();
+use dgraph_tonic::Client;
 
-let resp = client.new_read_only_txn().query(q).await?;
-println!("{:#?}", resp.schema);
+#[tokio::main]
+async fn main() {
+  let q = r#"schema(pred: [name]) {
+    type
+    index
+    reverse
+    tokenizer
+    list
+    count
+    upsert
+    lang
+  }"#;
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_read_only_txn();
+  let response = txn.query(q).await.expect("Response");
+  println!("{:#?}", response.schema);
+}
 ```
 
 ### Running an Upsert: Query + Mutation
@@ -221,18 +291,21 @@ The `txn.upsert(query, mutation)` function allows you to run upserts consisting 
 To know more about upsert, we highly recommend going through the docs at https://docs.dgraph.io/mutations/#upsert-block.
 
 ```rust
-let q = r#"
-  query {
-      user as var(func: eq(email, "wrong_email@dgraph.io"))
-  }"#;
+use dgraph_tonic::Client;
 
-let mut mu = Mutation::new();
-mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-
-let txn = client.new_mutated_txn();
-// Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-let response = txn.upsert(q, mu).await.expect("failed to upsert data");
-
+#[tokio::main]
+async fn main() {
+  let q = r#"
+    query {
+        user as var(func: eq(email, "wrong_email@dgraph.io"))
+    }"#;
+  let mut mu = Mutation::new();
+  mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let txn = client.new_mutated_txn();
+  // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+  let response = txn.upsert(q, mu).await.expect("Upserted data");
+}
 ```
 
 You can upsert with one mutation or vector of mutations.
@@ -246,17 +319,23 @@ The upsert block allows specifying a conditional mutation block using an `@if` d
 See more about Conditional Upsert [Here](https://docs.dgraph.io/mutations/#conditional-upsert).
 
 ```rust
-let q = r#"
-  query {
-      user as var(func: eq(email, "wrong_email@dgraph.io"))
-  }"#;
+use dgraph_tonic::Client;
 
-let mut mu = Mutation::new();
-mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-mu.set_cond("@if(eq(len(user), 1))");
+#[tokio::main]
+async fn main() {
+  let q = r#"
+    query {
+        user as var(func: eq(email, "wrong_email@dgraph.io"))
+    }"#;
 
-let txn = client.new_mutated_txn();
-let response = txn.upsert(q, vec![mu]).await.expect("failed to upsert data");
+  let mut mu = Mutation::new();
+  mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+  mu.set_cond("@if(eq(len(user), 1))");
+
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let txn = client.new_mutated_txn();
+  let response = txn.upsert(q, vec![mu]).await.expect("Upserted data");
+}
 ```
 
 ### Commit a transaction
@@ -266,20 +345,79 @@ A mutated transaction can be committed using the `txn.commit()` method. If your 
 An error will be returned if other transactions running concurrently modify the same data that was modified in this transaction. It is up to the user to retry transactions when they fail.
 
 ```rust
-let mut txn = client.new_mutated_txn();
-// Perform some queries and mutations.
+use dgraph_tonic::Client;
 
-let res = txn.commit().await;
-if res.is_err() {
-  // Retry or handle error
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_mutated_txn();
+  // Perform some queries and mutations.
+
+  //than commit
+  let res = txn.commit().await;
+  if res.is_err() {
+    // Retry or handle error
+  }
+}
+```
+
+### Access Control Lists
+
+This is Dgraph enterprise feature which can be activated with:
+
+```toml
+[dependencies]
+dgraph-tonic = { version = "0.4", features = ["acl"] }
+```
+
+[Access Control List (ACL)](https://dgraph.io/docs/enterprise-features/#access-control-lists) provides access protection to your data stored in Dgraph. When the ACL feature is turned on, a client must authenticate with a username and password before executing any transactions, and is only allowed to access the data permitted by the ACL rules.
+
+Both, `Client` and `TlsClient` can be logged in wit `login(user_id,password)` function. This function consume original client and return instance of `AclClient` which allows token refreshing with `refresh_login()` function.
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let logged_in_client = client.login("groot", "password").await.expect("Logged in");
+  // use client
+
+  //than refresh token
+  logged_in_client.refresh_login().await.except("Refreshed access token");
+}
+
+```
+
+### Check version
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let version = client.check_version().await.expect("Version");
+  println!("{:#?}", version);
+}
+
+```
+
+Output:
+
+```console
+Version {
+    tag: "v20.03.0",
 }
 ```
 
 ## Examples
 
 - [simple][]: Quickstart example of using dgraph-tonic.
+- [tls][]: Example of using dgraph-tonic with a Dgraph cluster secured with TLS.
 
 [simple]: ./examples/simple
+[tls]: ./examples/tls
 
 ## Integration tests
 

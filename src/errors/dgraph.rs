@@ -1,4 +1,4 @@
-use failure::Fail;
+use failure::{Error as Failure, Fail};
 
 ///
 /// Possible Dgraph errors
@@ -8,7 +8,7 @@ pub enum Error {
     #[fail(display = "Dgraph: Txn start mismatch")]
     StartTsMismatch,
     #[fail(display = "Dgraph: gRPC communication Error")]
-    GrpcError(String),
+    GrpcError(Failure),
     #[fail(display = "Dgraph: Txn is empty")]
     EmptyTxn,
     #[fail(display = "Dgraph: Missing Txn context")]

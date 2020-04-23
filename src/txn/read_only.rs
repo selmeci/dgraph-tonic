@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+use crate::client::ILazyClient;
 use crate::txn::default::Base;
 use crate::txn::{IState, Txn, TxnState, TxnVariant};
 use crate::Request;
@@ -9,17 +10,17 @@ use crate::Request;
 /// Inner state for read only transaction
 ///
 #[derive(Clone, Debug)]
-pub struct ReadOnly {
-    base: Base,
+pub struct ReadOnly<C: ILazyClient> {
+    base: Base<C>,
 }
 
-impl IState for ReadOnly {
+impl<C: ILazyClient> IState for ReadOnly<C> {
     ///
     /// Update query request with read_only flag
     ///
-    fn query_request(
+    fn query_request<S: ILazyClient>(
         &self,
-        state: &TxnState,
+        state: &TxnState<S>,
         query: String,
         vars: HashMap<String, String>,
     ) -> Request {
@@ -32,13 +33,13 @@ impl IState for ReadOnly {
 ///
 /// ReadOnly variant of transaction
 ///
-pub type ReadOnlyTxn = TxnVariant<ReadOnly>;
+pub type ReadOnlyTxn<C> = TxnVariant<ReadOnly<C>, C>;
 
-impl Txn {
+impl<C: ILazyClient> Txn<C> {
     ///
     /// Create new read only transaction from default transaction state
     ///
-    pub fn read_only(self) -> ReadOnlyTxn {
+    pub fn read_only(self) -> ReadOnlyTxn<C> {
         TxnVariant {
             state: self.state,
             extra: ReadOnly { base: self.extra },

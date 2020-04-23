@@ -5,6 +5,9 @@ use serde_json::Value;
 use crate::Response;
 
 impl Response {
+    ///
+    /// Try deserialize response JSON data into T
+    ///
     pub fn try_into<'a, T>(&'a self) -> Result<T, Error>
     where
         T: de::Deserialize<'a>,
@@ -13,6 +16,9 @@ impl Response {
         Ok(result)
     }
 
+    ///
+    /// Consume response and try return response JSON data deserialized into T
+    ///
     pub fn try_into_owned<T>(self) -> Result<T, Error>
     where
         T: de::DeserializeOwned,

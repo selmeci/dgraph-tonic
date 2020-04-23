@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-dgraph-tonic = {path = "../../"}
+dgraph-tonic = {path = "../../", features = ["tls"]}
 maplit = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"

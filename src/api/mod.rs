@@ -1,4 +1,4 @@
-use tonic::Status;
+use failure::Error;
 
 use async_trait::async_trait;
 
@@ -14,20 +14,21 @@ mod v1_0_x;
 mod v1_1_x;
 
 #[async_trait]
+#[doc(hidden)]
 pub(crate) trait IDgraphClient: Clone + Sized {
-    async fn login(&mut self, user_id: String, password: String) -> Result<Response, Status>;
+    async fn login(&mut self, login: LoginRequest) -> Result<Response, Error>;
 
-    async fn query(&mut self, query: Request) -> Result<Response, Status>;
+    async fn query(&mut self, query: Request) -> Result<Response, Error>;
 
     #[cfg(feature = "dgraph-1-0")]
-    async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Status>;
+    async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Error>;
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn do_request(&mut self, req: Request) -> Result<Response, Status>;
+    async fn do_request(&mut self, req: Request) -> Result<Response, Error>;
 
-    async fn alter(&mut self, op: Operation) -> Result<Payload, Status>;
+    async fn alter(&mut self, op: Operation) -> Result<Payload, Error>;
 
-    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext, Status>;
+    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext, Error>;
 
-    async fn check_version(&mut self) -> Result<Version, Status>;
+    async fn check_version(&mut self) -> Result<Version, Error>;
 }
