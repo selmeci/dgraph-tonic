@@ -1,11 +1,11 @@
 use crate::client::lazy::{LazyChannel, LazyClient};
-use crate::client::{rnd_item, ClientState, ClientVariant, IClient};
+use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
 use failure::Error;
 use http::Uri;
 use std::convert::TryInto;
-use tonic::codegen::Arc;
+use std::sync::Arc;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
 ///
@@ -101,7 +101,7 @@ impl TlsClient {
     /// async fn main() {
     ///     let server_root_ca_cert = tokio::fs::read("path/to/ca.crt").await.expect("CA cert");
     ///     let client_cert = tokio::fs::read("path/to/client.crt").await.expect("Client cert");
-    ///     let client_key = tokio::fs::read("path/to/ca.key".await.expect("Client key"));
+    ///     let client_key = tokio::fs::read("path/to/ca.key").await.expect("Client key");
     ///     // vector of endpoints
     ///     let client = TlsClient::new(
     ///             vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"],
@@ -125,7 +125,7 @@ impl TlsClient {
             .identity(client_identity);
         let tls = Arc::new(tls);
         let extra = Tls {
-            clients: Self::balance_list(endpoints)?
+            clients: balance_list(endpoints)?
                 .into_iter()
                 .map(|uri| LazyClient::new(LazyTlsChannel::new(uri, Arc::clone(&tls))))
                 .collect(),

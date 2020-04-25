@@ -1,18 +1,12 @@
-///! Transactions is modeled with principles of [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/)
+pub(crate) use crate::sync::txn::best_effort::BestEffortTxn;
+pub(crate) use crate::sync::txn::default::Txn;
+pub(crate) use crate::sync::txn::mutated::MutatedTxn;
+pub(crate) use crate::sync::txn::read_only::ReadOnlyTxn;
+use crate::{DgraphError, Response, Result};
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
-
-use crate::client::ILazyClient;
-use crate::errors::DgraphError;
-use crate::stub::Stub;
-pub use crate::txn::best_effort::BestEffortTxn;
-pub use crate::txn::default::Txn;
-pub use crate::txn::mutated::MutatedTxn;
-pub use crate::txn::read_only::ReadOnlyTxn;
-use crate::IDgraphClient;
-use crate::{Request, Response, TxnContext};
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -21,50 +15,51 @@ pub(crate) mod read_only;
 
 ///
 /// Transaction state.
-/// Hold txn context and Dgraph client for communication.
+/// Hold Tokio runtime
 ///
 #[derive(Clone, Debug)]
-pub struct TxnState<C: ILazyClient> {
-    stub: Stub<C>,
-    context: TxnContext,
-}
+pub struct TxnState {}
 
 ///
 /// Each transaction variant must implement this state trait.
 ///
+#[async_trait]
 pub trait IState: Send + Sync + Clone {
-    fn query_request<C: ILazyClient>(
-        &self,
-        state: &TxnState<C>,
-        query: String,
-        vars: HashMap<String, String>,
-    ) -> Request;
+    fn query_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
 }
 
 ///
 /// Type state for Transaction variants
 ///
-#[derive(Clone, Debug)]
-pub struct TxnVariant<S: IState, C: ILazyClient> {
-    state: Box<TxnState<C>>,
+#[derive(Clone)]
+pub struct TxnVariant<S: IState> {
+    state: Box<TxnState>,
     extra: S,
 }
 
-impl<S: IState, C: ILazyClient> Deref for TxnVariant<S, C> {
-    type Target = Box<TxnState<C>>;
+impl<S: IState> Deref for TxnVariant<S> {
+    type Target = Box<TxnState>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
     }
 }
 
-impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
+impl<S: IState> DerefMut for TxnVariant<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
+impl<S: IState> TxnVariant<S> {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
@@ -82,20 +77,23 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use dgraph_tonic::{Client, Response};
+    /// use dgraph_tonic::Response;
+    /// use dgraph_tonic::sync::Client;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClient;
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    /// use dgraph_tonic::LazyDefaultChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
+    /// fn client() -> Client {
     ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    /// fn client() -> AclClient<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
+    ///     default.login("groot", "password").expect("Acl client")
     /// }    
     ///
     /// #[derive(Deserialize, Debug)]
@@ -109,8 +107,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///   all: Vec<Person>
     /// }
     ///
-    /// #[tokio::main]
-    /// async fn main() {
+    /// fn main() {
     ///     let q = r#"query all($a: string) {
     ///     all(func: eq(name, "Alice")) {
     ///       uid
@@ -118,19 +115,18 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///     }
     ///   }"#;
     ///
-    ///   let client = client().await;
+    ///   let client = client();
     ///   let mut txn = client.new_read_only_txn();
-    ///   let resp: Response = txn.query(q).await.expect("Query response");
+    ///   let resp: Response = txn.query(q).expect("Query response");
     ///   let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```
     ///
-    pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    pub fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
     {
         self.query_with_vars(query, HashMap::<String, String, _>::new())
-            .await
     }
 
     ///
@@ -151,20 +147,23 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use dgraph_tonic::{Client, Response};
+    /// use dgraph_tonic::Response;
+    /// use dgraph_tonic::sync::Client;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClient;
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    /// use dgraph_tonic::LazyDefaultChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
+    /// fn client() -> Client {
     ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
     /// }
     ///
     /// #[cfg(feature = "acl")]
     /// async fn client() -> AclClient<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
+    ///     default.login("groot", "password").expect("Acl client")
     /// }     
     ///
     /// #[derive(Deserialize, Debug)]
@@ -178,8 +177,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///     all: Vec<Person>
     /// }
     ///
-    /// #[tokio::main]
-    /// async fn main() {
+    /// fn main() {
     ///     let q = r#"query all($a: string) {
     ///         all(func: eq(name, $a)) {
     ///         uid
@@ -190,13 +188,13 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///     let mut vars = HashMap::new();
     ///     vars.insert("$a", "Alice");
     ///
-    ///     let client = client().await;
+    ///     let client = client();
     ///     let mut txn = client.new_read_only_txn();
-    ///     let resp: Response = txn.query_with_vars(q, vars).await.expect("query response");
+    ///     let resp: Response = txn.query_with_vars(q, vars).expect("query response");
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
-    pub async fn query_with_vars<Q, K, V>(
+    pub fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
         vars: HashMap<K, V>,
@@ -206,22 +204,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let vars = vars.into_iter().fold(HashMap::new(), |mut tmp, (k, v)| {
-            tmp.insert(k.into(), v.into());
-            tmp
-        });
-        let request = self.extra.query_request(&self.state, query.into(), vars);
-        let response = match self.stub.query(request).await {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(DgraphError::GrpcError(err));
-            }
-        };
-        match response.txn.as_ref() {
-            Some(src) => self.context.merge_context(src)?,
-            None => return Err(DgraphError::EmptyTxn),
-        };
-        Ok(response)
+        self.extra.query_with_vars(query, vars)
     }
 }
 
@@ -231,20 +214,22 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::client::Client;
     #[cfg(feature = "acl")]
-    use crate::client::{AclClient, LazyDefaultChannel};
+    use crate::client::LazyDefaultChannel;
+    #[cfg(feature = "acl")]
+    use crate::sync::client::AclClient;
+    use crate::sync::client::Client;
     use crate::Mutation;
 
     #[cfg(not(feature = "acl"))]
-    async fn client() -> Client {
+    fn client() -> Client {
         Client::new("http://127.0.0.1:19080").unwrap()
     }
 
     #[cfg(feature = "acl")]
-    async fn client() -> AclClient<LazyDefaultChannel> {
+    fn client() -> AclClient<LazyDefaultChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
-        default.login("groot", "password").await.unwrap()
+        default.login("groot", "password").unwrap()
     }
 
     #[derive(Serialize, Deserialize, Default, Debug)]
@@ -263,9 +248,9 @@ mod tests {
         pub uid: String,
     }
 
-    #[tokio::test]
-    async fn mutate_and_commit_now() {
-        let client = client().await;
+    #[test]
+    fn mutate_and_commit_now() {
+        let client = client();
         let txn = client.new_mutated_txn();
         let p = Person {
             uid: "_:alice".to_string(),
@@ -273,13 +258,13 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate_and_commit_now(mu).await;
+        let response = txn.mutate_and_commit_now(mu);
         assert!(response.is_ok());
     }
 
-    #[tokio::test]
-    async fn commit() {
-        let client = client().await;
+    #[test]
+    fn commit() {
+        let client = client();
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -288,7 +273,7 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //second mutation
         let p = Person {
@@ -297,17 +282,17 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //commit
-        let commit = txn.commit().await;
+        let commit = txn.commit();
         assert!(commit.is_ok())
     }
 
+    #[test]
     #[cfg(feature = "dgraph-1-1")]
-    #[tokio::test]
-    async fn upsert() {
-        let client = client().await;
+    fn upsert() {
+        let client = client();
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -316,7 +301,7 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //second mutation
         let p = Person {
@@ -325,10 +310,10 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //commit
-        let commit = txn.commit().await;
+        let commit = txn.commit();
         assert!(commit.is_ok());
         //upser all alices with email
         let query = r#"
@@ -338,14 +323,14 @@ mod tests {
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let txn = client.new_mutated_txn();
-        let response = txn.upsert(query, mu).await;
+        let response = txn.upsert(query, mu);
         assert!(response.is_ok())
     }
 
+    #[test]
     #[cfg(feature = "dgraph-1-1")]
-    #[tokio::test]
-    async fn upsert_with_vars() {
-        let client = client().await;
+    fn upsert_with_vars() {
+        let client = client();
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -354,7 +339,7 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //second mutation
         let p = Person {
@@ -363,10 +348,10 @@ mod tests {
         };
         let mut mu = Mutation::new();
         mu.set_set_json(&p).expect("Invalid JSON");
-        let response = txn.mutate(mu).await;
+        let response = txn.mutate(mu);
         assert!(response.is_ok());
         //commit
-        let commit = txn.commit().await;
+        let commit = txn.commit();
         assert!(commit.is_ok());
         //upser all alices with email
         let query = r#"
@@ -378,28 +363,28 @@ mod tests {
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
         let txn = client.new_mutated_txn();
-        let response = txn.upsert_with_vars(query, vars, vec![mu]).await;
+        let response = txn.upsert_with_vars(query, vars, vec![mu]);
         assert!(response.is_ok())
     }
 
-    #[tokio::test]
-    async fn query() {
-        let client = client().await;
+    #[test]
+    fn query() {
+        let client = client();
         let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
                 uid
             }
         }"#;
-        let response = txn.query(query).await;
+        let response = txn.query(query);
         assert!(response.is_ok());
         let mut json: UidJson = response.unwrap().try_into().unwrap();
         assert!(json.uids.pop().is_some());
     }
 
-    #[tokio::test]
-    async fn query_with_vars() {
-        let client = client().await;
+    #[test]
+    fn query_with_vars() {
+        let client = client();
         let mut txn = client.new_read_only_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
@@ -408,7 +393,7 @@ mod tests {
           }"#;
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
-        let response = txn.query_with_vars(query, vars).await;
+        let response = txn.query_with_vars(query, vars);
         assert!(response.is_ok());
         let mut json: UidJson = response.unwrap().try_into().unwrap();
         assert!(json.uids.pop().is_some());

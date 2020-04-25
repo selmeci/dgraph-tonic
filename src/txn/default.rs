@@ -43,11 +43,11 @@ impl<C: ILazyClient> Txn<C> {
     ///
     /// Create new default transaction which can do query operations.
     ///
-    pub fn new(client: Stub<C>) -> Txn<C> {
+    pub fn new(stub: Stub<C>) -> Txn<C> {
         Self {
             state: Box::new(TxnState {
                 context: Default::default(),
-                client,
+                stub,
             }),
             extra: Base {
                 mark: PhantomData {},

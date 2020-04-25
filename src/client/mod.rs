@@ -4,7 +4,6 @@ use failure::Error;
 use http::Uri;
 use rand::Rng;
 
-#[cfg(feature = "acl")]
 pub use crate::client::default::LazyDefaultChannel;
 pub use crate::client::endpoints::Endpoints;
 use crate::errors::ClientError;
@@ -12,7 +11,6 @@ use crate::stub::Stub;
 use crate::{
     BestEffortTxn, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn, Result, Txn,
 };
-use async_trait::async_trait;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
@@ -26,13 +24,16 @@ use crate::client::lazy::LazyChannel;
 pub use crate::client::tls::TlsClient;
 
 #[cfg(feature = "acl")]
-mod acl;
-mod default;
-mod endpoints;
-mod lazy;
+pub(crate) mod acl;
+pub(crate) mod default;
+pub(crate) mod endpoints;
+pub(crate) mod lazy;
 #[cfg(feature = "tls")]
-mod tls;
+pub(crate) mod tls;
 
+///
+/// return random cloned item from vector
+///
 pub(crate) fn rnd_item<T: Clone>(items: &Vec<T>) -> T {
     let mut rng = rand::thread_rng();
     let i = rng.gen_range(0, items.len());
@@ -44,9 +45,31 @@ pub(crate) fn rnd_item<T: Clone>(items: &Vec<T>) -> T {
 }
 
 ///
+/// Check if every endpoint is valid uri and also check if at least one endpoint is given
+///
+pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
+    endpoints: E,
+) -> Result<Vec<Uri>, Error> {
+    let endpoints: Endpoints<U> = endpoints.into();
+    let mut balance_list: Vec<Uri> = Vec::new();
+    for maybe_endpoint in endpoints.endpoints {
+        let endpoint = match maybe_endpoint.try_into() {
+            Ok(endpoint) => endpoint,
+            Err(_err) => {
+                return Err(ClientError::InvalidEndpoint.into());
+            }
+        };
+        balance_list.push(endpoint);
+    }
+    if balance_list.is_empty() {
+        return Err(ClientError::NoEndpointsDefined.into());
+    };
+    Ok(balance_list)
+}
+
+///
 /// Marker for client variant implementation
 ///
-#[async_trait]
 pub trait IClient: Debug + Send + Sync {
     type Client: ILazyClient<Channel = Self::Channel>;
     type Channel: LazyChannel;
@@ -70,7 +93,7 @@ pub struct ClientState;
 
 impl ClientState {
     ///
-    /// Create new client state with given Dgraph endpoints
+    /// Create new client state
     ///
     pub fn new() -> Self {
         Self {}
@@ -80,9 +103,10 @@ impl ClientState {
 ///
 /// Dgraph client has several variants which offer different behavior.
 ///
+#[derive(Debug)]
 pub struct ClientVariant<S: IClient> {
     state: Box<ClientState>,
-    extra: S,
+    pub(crate) extra: S,
 }
 
 impl<S: IClient> Deref for ClientVariant<S> {
@@ -101,31 +125,7 @@ impl<S: IClient> DerefMut for ClientVariant<S> {
 
 impl<S: IClient> ClientVariant<S> {
     ///
-    /// Check if every endpoint is valid uri and also check if at least one endpoint is given
-    ///
-    fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
-        endpoints: E,
-    ) -> Result<Vec<Uri>, Error> {
-        let endpoints: Endpoints<U> = endpoints.into();
-        let mut balance_list: Vec<Uri> = Vec::new();
-        for maybe_endpoint in endpoints.endpoints {
-            let endpoint = match maybe_endpoint.try_into() {
-                Ok(endpoint) => endpoint,
-                Err(_err) => {
-                    return Err(ClientError::InvalidEndpoint.into());
-                }
-            };
-            balance_list.push(endpoint);
-        }
-        if balance_list.is_empty() {
-            return Err(ClientError::NoEndpointsDefined.into());
-        };
-        Ok(balance_list)
-    }
-
-    ///
     /// Return new stub with grpc client implemented according to actual variant.
-    ///
     ///
     fn any_stub(&self) -> Stub<S::Client> {
         Stub::new(self.extra.client())
@@ -245,11 +245,10 @@ impl<S: IClient> ClientVariant<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Client;
 
     use super::*;
     #[cfg(feature = "acl")]
-    use crate::client::LazyDefaultChannel;
+    use crate::client::{Client, LazyDefaultChannel};
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {
