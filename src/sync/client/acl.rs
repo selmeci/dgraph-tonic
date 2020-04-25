@@ -73,7 +73,7 @@ impl<S: IClient> ClientVariant<S> {
     /// ```
     /// use dgraph_tonic::sync::Client;
     ///
-    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     ///     let logged = client.login("groot", "password").expect("Logged in");
     ///     // now you can use logged client for all operations over DB

@@ -161,7 +161,7 @@ impl<S: IState> TxnVariant<S> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    /// fn client() -> AclClient<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
