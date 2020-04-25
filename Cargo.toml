@@ -1,12 +1,12 @@
 [package]
 name = "dgraph-tonic"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Selmeci <selmeci.roman@gmail.com>"]
 edition = "2018"
-description = "A rust async client for Dgraph database build with Tonic crate"
+description = "A rust async/async client for Dgraph database build with Tonic crate"
 readme = "README.md"
 license = "MIT"
-keywords = ["dgraph", "grpc", "async"]
+keywords = ["dgraph", "grpc", "async", "sync"]
 repository = "https://github.com/selmeci/dgraph-tonic"
 homepage = "https://github.com/selmeci/dgraph-tonic"
 exclude = [
