@@ -1,87 +1,35 @@
-use std::convert::TryInto;
-
-use failure::Error;
-use http::Uri;
-use rand::Rng;
-
-pub use crate::client::default::LazyDefaultChannel;
-pub use crate::client::endpoints::Endpoints;
-use crate::errors::ClientError;
+use crate::api::IDgraphClient;
+#[cfg(feature = "acl")]
+use crate::client::AclClient as AsyncAclClient;
+use crate::client::ILazyClient;
 use crate::stub::Stub;
-use crate::{
-    BestEffortTxn, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn, Result, Txn,
-};
+use crate::{Operation, Payload, Version};
+use async_trait::async_trait;
+use failure::Error;
+use lazy_static::lazy_static;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime;
 
-use crate::api::Version;
-#[cfg(feature = "acl")]
-pub use crate::client::acl::AclClient;
-pub use crate::client::default::Client;
-pub(crate) use crate::client::lazy::ILazyClient;
 use crate::client::lazy::LazyChannel;
+#[cfg(feature = "acl")]
+pub use crate::sync::client::acl::AclClient;
+pub use crate::sync::client::default::Client;
 #[cfg(feature = "tls")]
-pub use crate::client::tls::TlsClient;
+pub use crate::sync::client::tls::TlsClient;
+use crate::sync::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
+use crate::txn::Txn as AsyncTxn;
 
 #[cfg(feature = "acl")]
-pub(crate) mod acl;
-pub(crate) mod default;
-pub(crate) mod endpoints;
-pub(crate) mod lazy;
+mod acl;
+mod default;
 #[cfg(feature = "tls")]
-pub(crate) mod tls;
+mod tls;
 
-///
-/// return random cloned item from vector
-///
-pub(crate) fn rnd_item<T: Clone>(items: &Vec<T>) -> T {
-    let mut rng = rand::thread_rng();
-    let i = rng.gen_range(0, items.len());
-    if let Some(item) = items.get(i) {
-        item.to_owned()
-    } else {
-        unreachable!()
-    }
-}
-
-///
-/// Check if every endpoint is valid uri and also check if at least one endpoint is given
-///
-pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
-    endpoints: E,
-) -> Result<Vec<Uri>, Error> {
-    let endpoints: Endpoints<U> = endpoints.into();
-    let mut balance_list: Vec<Uri> = Vec::new();
-    for maybe_endpoint in endpoints.endpoints {
-        let endpoint = match maybe_endpoint.try_into() {
-            Ok(endpoint) => endpoint,
-            Err(_err) => {
-                return Err(ClientError::InvalidEndpoint.into());
-            }
-        };
-        balance_list.push(endpoint);
-    }
-    if balance_list.is_empty() {
-        return Err(ClientError::NoEndpointsDefined.into());
-    };
-    Ok(balance_list)
-}
-
-///
-/// Marker for client variant implementation
-///
-pub trait IClient: Debug + Send + Sync {
-    type Client: ILazyClient<Channel = Self::Channel>;
-    type Channel: LazyChannel;
-    ///
-    /// Return lazy Dgraph gRPC client
-    ///
-    fn client(&self) -> Self::Client;
-
-    ///
-    /// consume self and return all lazy clients
-    ///
-    fn clients(self) -> Vec<Self::Client>;
+lazy_static! {
+    static ref RT: Arc<Mutex<Runtime>> =
+        Arc::new(Mutex::new(Runtime::new().expect("Tokio runtime")));
 }
 
 ///
@@ -89,24 +37,51 @@ pub trait IClient: Debug + Send + Sync {
 ///
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct ClientState;
+pub struct ClientState {
+    rt: Arc<Mutex<Runtime>>,
+}
 
 impl ClientState {
     ///
-    /// Create new client state
+    /// Create new client state with default async implementation
     ///
     pub fn new() -> Self {
-        Self {}
+        Self {
+            rt: Arc::clone(&*RT),
+        }
     }
+}
+
+#[async_trait]
+pub trait IClient {
+    type AsyncClient;
+    type Client: ILazyClient<Channel = Self::Channel>;
+    type Channel: LazyChannel;
+
+    fn client(&self) -> Self::Client;
+
+    fn clients(self) -> Vec<Self::Client>;
+
+    fn async_client_ref(&self) -> &Self::AsyncClient;
+
+    fn async_client(self) -> Self::AsyncClient;
+
+    fn new_txn(&self) -> AsyncTxn<Self::Client>;
+
+    #[cfg(feature = "acl")]
+    async fn login<T: Into<String> + Send + Sync>(
+        self,
+        user_id: T,
+        password: T,
+    ) -> Result<AsyncAclClient<Self::Channel>, Error>;
 }
 
 ///
 /// Dgraph client has several variants which offer different behavior.
 ///
-#[derive(Debug)]
 pub struct ClientVariant<S: IClient> {
     state: Box<ClientState>,
-    pub(crate) extra: S,
+    extra: S,
 }
 
 impl<S: IClient> Deref for ClientVariant<S> {
@@ -135,7 +110,9 @@ impl<S: IClient> ClientVariant<S> {
     /// Return transaction in default state, which can be specialized into ReadOnly or Mutated
     ///
     pub fn new_txn(&self) -> Txn<S::Client> {
-        Txn::new(self.any_stub())
+        let rt = Arc::clone(&self.rt);
+        let async_txn = self.extra.new_txn();
+        Txn::new(rt, async_txn)
     }
 
     ///
@@ -149,6 +126,13 @@ impl<S: IClient> ClientVariant<S> {
     }
 
     ///
+    /// Create new transaction which can do mutate, commit and discard operations
+    ///
+    pub fn new_mutated_txn(&self) -> MutatedTxn<S::Client> {
+        self.new_txn().mutated()
+    }
+
+    ///
     /// Create new transaction which can only do queries in best effort mode.
     ///
     /// Read-only queries can optionally be set as best-effort. Using this flag will ask the
@@ -158,13 +142,6 @@ impl<S: IClient> ClientVariant<S> {
     ///
     pub fn new_best_effort_txn(&self) -> BestEffortTxn<S::Client> {
         self.new_read_only_txn().best_effort()
-    }
-
-    ///
-    /// Create new transaction which can do mutate, commit and discard operations
-    ///
-    pub fn new_mutated_txn(&self) -> MutatedTxn<S::Client> {
-        self.new_txn().mutated()
     }
 
     ///
@@ -184,36 +161,39 @@ impl<S: IClient> ClientVariant<S> {
     /// Install a schema into dgraph. A `name` predicate is string type and has exact index.
     ///
     /// ```
-    /// use dgraph_tonic::{Client, Operation};
+    /// use dgraph_tonic::Operation;
+    /// use dgraph_tonic::sync::Client;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    /// use dgraph_tonic::sync::AclClient;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyDefaultChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
+    /// fn client() -> Client {
     ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    /// fn client() -> AclClient<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
+    ///     default.login("groot", "password").expect("Acl client")
     /// }
     ///
-    /// #[tokio::main]
-    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let client = client().await;
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = client();
     ///     let op = Operation {
     ///         schema: "name: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     client.alter(op).expect("Schema is not updated");
     ///     Ok(())
     /// }
     /// ```
     ///
-    pub async fn alter(&self, op: Operation) -> Result<Payload, Error> {
+    pub fn alter(&self, op: Operation) -> Result<Payload, Error> {
+        let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
-        stub.alter(op).await
+        rt.block_on(async move { stub.alter(op).await })
     }
 
     ///
@@ -226,20 +206,21 @@ impl<S: IClient> ClientVariant<S> {
     /// # Example
     ///
     /// ```
-    /// use dgraph_tonic::{Client, Operation};
+    /// use dgraph_tonic::Operation;
+    /// use dgraph_tonic::sync::Client;
     ///
-    /// #[tokio::main]
-    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
-    ///     let version = client.check_version().await.expect("Version");
+    ///     let version = client.check_version().expect("Version");
     ///     println!("{:#?}", version);
     ///     Ok(())
     /// }
     /// ```
     ///
-    pub async fn check_version(&self) -> Result<Version, Error> {
+    pub fn check_version(&self) -> Result<Version, Error> {
+        let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
-        stub.check_version().await
+        rt.block_on(async move { stub.check_version().await })
     }
 }
 
@@ -248,34 +229,34 @@ mod tests {
 
     use super::*;
     #[cfg(feature = "acl")]
-    use crate::client::{Client, LazyDefaultChannel};
+    use crate::client::LazyDefaultChannel;
 
     #[cfg(not(feature = "acl"))]
-    async fn client() -> Client {
+    fn client() -> Client {
         Client::new("http://127.0.0.1:19080").unwrap()
     }
 
     #[cfg(feature = "acl")]
-    async fn client() -> AclClient<LazyDefaultChannel> {
+    fn client() -> AclClient<LazyDefaultChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
-        default.login("groot", "password").await.unwrap()
+        default.login("groot", "password").unwrap()
     }
 
-    #[tokio::test]
-    async fn alter() {
-        let client = client().await;
+    #[test]
+    fn alter() {
+        let client = client();
         let op = Operation {
             schema: "name: string @index(exact) .".into(),
             ..Default::default()
         };
-        let response = client.alter(op).await;
+        let response = client.alter(op);
         assert!(response.is_ok());
     }
 
-    #[tokio::test]
-    async fn check_version() {
-        let client = client().await;
-        let response = client.check_version().await;
+    #[test]
+    fn check_version() {
+        let client = client();
+        let response = client.check_version();
         assert!(response.is_ok());
     }
 }

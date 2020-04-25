@@ -160,14 +160,6 @@ impl<S: IClient> ClientVariant<S> {
 
 impl<C: LazyChannel> AclClient<C> {
     ///
-    /// Return JWT refresh token
-    ///
-    pub fn refresh_jwt(&self) -> String {
-        let token = self.extra.refresh_jwt.lock().unwrap();
-        token.to_owned()
-    }
-
-    ///
     /// Try refresh actual login JWT tokens with new ones.
     ///
     /// # Errors

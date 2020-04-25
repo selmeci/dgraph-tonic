@@ -18,6 +18,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Using a client](#using-a-client)
   - [Create a client](#create-a-client)
   - [Create a TLS client](#create-a-tls-client)
+  - [Create a Sync client](#create-a-sync-client)
   - [Alter the database](#alter-the-database)
   - [Create a transaction](#create-a-transaction)
   - [Run a mutation](#run-a-mutation)
@@ -30,6 +31,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Examples](#examples)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
+- [Thanks to](#thanks-to)
 
 ## Installation
 
@@ -59,10 +61,11 @@ dgraph-tonic = { version = "0.4", features = ["dgraph-1-0"], default-features = 
 Supported features:
 
 - *acl*: Enable client with authentification.
-- *all*: enable tls and acl feature with dgraph-1-1
+- *all*: enable tls, acl and sync features with dgraph-1-1
 - *dgraph-1-0*: Enable client for Dgraph v1.0.x
 - *dgraph-1-1*: Enable client for Dgraph v1.1.x and v20.0.x
 - *tls*: Enable secured TlsClient
+- *sync*: Enable synchronous Client
 
 ## Supported Versions
 
@@ -122,6 +125,34 @@ async fn main() {
 ```
 
 All certs must be in `PEM` format.
+
+### Create a Sync client
+
+Alternatively, synchronous clients (Tls, Acl) are avaible with `sync` feature in `dgraph_tonic::sync` model:
+
+```toml
+[dependencies]
+dgraph-tonic = { version = "0.4", features = ["sync"] }
+```
+
+```rust
+use dgraph_tonic::sync::Client;
+
+fn main() {
+  let p = Person {
+    uid:  "_:alice".into(),
+    name: "Alice".into(),
+  };
+  let mut mu = Mutation::new();
+  mu.set_set_json(&p).expect("JSON");
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_mutated_txn();
+  let response = txn.mutate(mu).expect("Mutated");
+  txn.commit().expect("Transaction is commited");
+}
+```
+
+All sync clients support same functionalities as async versions.
 
 ### Alter the database
 
@@ -196,7 +227,7 @@ async fn main() {
   mu.set_set_json(&p).expect("JSON");
   let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
   let mut txn = client.new_mutated_txn();
-  let response = txn.mutate(mu).await.expect("failed to create data");
+  let response = txn.mutate(mu).await.expect("Mutated");
   txn.commit().await.expect("Transaction is commited");
 }
 ```
@@ -363,7 +394,7 @@ async fn main() {
 
 ### Access Control Lists
 
-This is Dgraph enterprise feature which can be activated with:
+This enterprise Dgraph feature which can be activated with:
 
 ```toml
 [dependencies]
@@ -372,7 +403,7 @@ dgraph-tonic = { version = "0.4", features = ["acl"] }
 
 [Access Control List (ACL)](https://dgraph.io/docs/enterprise-features/#access-control-lists) provides access protection to your data stored in Dgraph. When the ACL feature is turned on, a client must authenticate with a username and password before executing any transactions, and is only allowed to access the data permitted by the ACL rules.
 
-Both, `Client` and `TlsClient` can be logged in wit `login(user_id,password)` function. This function consume original client and return instance of `AclClient` which allows token refreshing with `refresh_login()` function.
+Both, `Client` and `TlsClient` can be logged in with `login(user_id,password)` function. Original client is consumed and return instance of `AclClient` which allows token refreshing with `refresh_login()` function.
 
 ```rust
 use dgraph_tonic::Client;
@@ -452,3 +483,9 @@ Update the version and publish crate:
 - `git push origin v0.X.X`
 - Write release log on GitHub
 - `cargo publish`
+
+## Thanks to
+
+[![eDocu]](https://www.edocu.com/)
+
+[edocu]: ./eDocu_Blue.png
