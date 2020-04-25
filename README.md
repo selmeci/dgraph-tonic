@@ -31,6 +31,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Examples](#examples)
 - [Integration tests](#integration-tests)
 - [Contributing](#contributing)
+- [Thanks to](#thanks-to)
 
 ## Installation
 
@@ -483,7 +484,7 @@ Update the version and publish crate:
 - Write release log on GitHub
 - `cargo publish`
 
-# Thanks to
+## Thanks to
 
 [![eDocu]](https://www.edocu.com/)
 
