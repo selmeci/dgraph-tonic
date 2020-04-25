@@ -128,7 +128,7 @@ All certs must be in `PEM` format.
 
 ### Create a Sync client
 
-Alternatively, synchronous clients (Tls, Acl) are avaible with `sync` feature in `dgraph_tonic::sync` model:
+Alternatively, synchronous clients (Tls, Acl) are avaible with `sync` feature in `dgraph_tonic::sync` module:
 
 ```toml
 [dependencies]
