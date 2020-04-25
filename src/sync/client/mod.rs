@@ -209,8 +209,7 @@ impl<S: IClient> ClientVariant<S> {
     /// use dgraph_tonic::Operation;
     /// use dgraph_tonic::sync::Client;
     ///
-    /// #[tokio::main]
-    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let client = Client::new(vec!["http://127.0.0.1:19080"]).expect("Dgraph client");
     ///     let version = client.check_version().expect("Version");
     ///     println!("{:#?}", version);
@@ -218,9 +217,46 @@ impl<S: IClient> ClientVariant<S> {
     /// }
     /// ```
     ///
-    pub async fn check_version(&self) -> Result<Version, Error> {
+    pub fn check_version(&self) -> Result<Version, Error> {
         let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.check_version().await })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[cfg(feature = "acl")]
+    use crate::client::LazyDefaultChannel;
+
+    #[cfg(not(feature = "acl"))]
+    fn client() -> Client {
+        Client::new("http://127.0.0.1:19080").unwrap()
+    }
+
+    #[cfg(feature = "acl")]
+    fn client() -> AclClient<LazyDefaultChannel> {
+        let default = Client::new("http://127.0.0.1:19080").unwrap();
+        default.login("groot", "password").unwrap()
+    }
+
+    #[test]
+    fn alter() {
+        let client = client();
+        let op = Operation {
+            schema: "name: string @index(exact) .".into(),
+            ..Default::default()
+        };
+        let response = client.alter(op);
+        assert!(response.is_ok());
+    }
+
+    #[test]
+    fn check_version() {
+        let client = client();
+        let response = client.check_version();
+        assert!(response.is_ok());
     }
 }

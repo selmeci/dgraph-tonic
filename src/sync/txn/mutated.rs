@@ -9,11 +9,11 @@ use async_trait::async_trait;
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
 use crate::sync::txn::{IState, Txn, TxnVariant};
+#[cfg(feature = "dgraph-1-1")]
 use crate::txn::mutated::UpsertMutation;
 use crate::txn::MutatedTxn as AsyncMutatedTxn;
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
-#[cfg(feature = "dgraph-1-1")]
 use crate::Response;
 use crate::{Mutation, Result};
 use tokio::runtime::Runtime;
@@ -354,7 +354,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///     client.alter(op).expect("Schema is not updated");
     ///     let txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    ///     let response = txn.upsert(q, vec![mu_1, mu_2]).expect("failed to upsert data");
     /// }
     /// ```      
     ///
