@@ -482,3 +482,9 @@ Update the version and publish crate:
 - `git push origin v0.X.X`
 - Write release log on GitHub
 - `cargo publish`
+
+# Thanks to
+
+[![eDocu]](https://www.edocu.com/)
+
+[edocu]: ./eDocu_Blue.png
