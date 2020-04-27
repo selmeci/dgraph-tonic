@@ -36,7 +36,6 @@ lazy_static! {
 /// Client state.
 ///
 #[derive(Debug)]
-#[doc(hidden)]
 pub struct ClientState {
     rt: Arc<Mutex<Runtime>>,
 }
@@ -98,18 +97,18 @@ impl<S: IClient> DerefMut for ClientVariant<S> {
     }
 }
 
-impl<S: IClient> ClientVariant<S> {
+impl<C: IClient> ClientVariant<C> {
     ///
     /// Return new stub with grpc client implemented according to actual variant.
     ///
-    fn any_stub(&self) -> Stub<S::Client> {
+    fn any_stub(&self) -> Stub<C::Client> {
         Stub::new(self.extra.client())
     }
 
     ///
     /// Return transaction in default state, which can be specialized into ReadOnly or Mutated
     ///
-    pub fn new_txn(&self) -> Txn<S::Client> {
+    pub fn new_txn(&self) -> Txn<C::Client> {
         let rt = Arc::clone(&self.rt);
         let async_txn = self.extra.new_txn();
         Txn::new(rt, async_txn)
@@ -121,14 +120,14 @@ impl<S: IClient> ClientVariant<S> {
     /// Read-only transactions are useful to increase read speed because they can circumvent the
     /// usual consensus protocol.
     ///
-    pub fn new_read_only_txn(&self) -> ReadOnlyTxn<S::Client> {
+    pub fn new_read_only_txn(&self) -> ReadOnlyTxn<C::Client> {
         self.new_txn().read_only()
     }
 
     ///
     /// Create new transaction which can do mutate, commit and discard operations
     ///
-    pub fn new_mutated_txn(&self) -> MutatedTxn<S::Client> {
+    pub fn new_mutated_txn(&self) -> MutatedTxn<C::Client> {
         self.new_txn().mutated()
     }
 
@@ -140,7 +139,7 @@ impl<S: IClient> ClientVariant<S> {
     /// of outbound requests to Zero. This may yield improved latencies in read-bound workloads where
     /// linearizable reads are not strictly needed.
     ///
-    pub fn new_best_effort_txn(&self) -> BestEffortTxn<S::Client> {
+    pub fn new_best_effort_txn(&self) -> BestEffortTxn<C::Client> {
         self.new_read_only_txn().best_effort()
     }
 
@@ -194,6 +193,56 @@ impl<S: IClient> ClientVariant<S> {
         let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.alter(op).await })
+    }
+
+    ///
+    /// Create or change the schema.
+    ///
+    /// # Arguments
+    ///
+    /// - `schema`: Schema modification
+    ///
+    /// # Errors
+    ///
+    /// * gRPC error
+    /// * DB reject alter command
+    ///
+    /// # Example
+    ///
+    /// Install a schema into dgraph. A `name` predicate is string type and has exact index.
+    ///
+    /// ```
+    /// use dgraph_tonic::Operation;
+    /// use dgraph_tonic::sync::Client;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClient;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyDefaultChannel;
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").expect("Acl client")
+    /// }
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = client();
+    ///     client.set_schema("name: string @index(exact) .").expect("Schema is not updated");
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload, Error> {
+        let op = Operation {
+            schema: schema.into(),
+            ..Default::default()
+        };
+        self.alter(op)
     }
 
     ///

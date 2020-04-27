@@ -114,7 +114,7 @@ use dgraph_tonic::TlsClient;
 async fn main() {
   let server_root_ca_cert = tokio::fs::read("path/to/ca.crt").await.expect("CA cert");
   let client_cert = tokio::fs::read("path/to/client.crt").await.expect("Client cert");
-  let client_key = tokio::fs::read("path/to/ca.key".await.expect("Client key"));
+  let client_key = tokio::fs::read("path/to/ca.key").await.expect("Client key");
   let client = TlsClient::new(
     vec!["http://192.168.0.10:19080", "http://192.168.0.11:19080"],
     server_root_ca_cert,
@@ -169,6 +169,8 @@ async fn main() {
   };
   let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
   let response = client.alter(op).await.expect("Schema set");
+  //you can set schema directly with
+  client.set_schema("name: string @index(exact) .").await.expect("Schema is not updated");
 }
 ```
 
