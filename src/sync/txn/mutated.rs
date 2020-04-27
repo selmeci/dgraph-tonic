@@ -8,12 +8,14 @@ use async_trait::async_trait;
 
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
-use crate::sync::txn::{IState, Txn, TxnVariant};
+use crate::sync::txn::{IState, Query, Txn, TxnVariant};
+use crate::txn::mutated::Mutate as AsyncMutate;
 #[cfg(feature = "dgraph-1-1")]
 use crate::txn::mutated::UpsertMutation;
 use crate::txn::MutatedTxn as AsyncMutatedTxn;
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
+use crate::Query as AsyncQuery;
 use crate::Response;
 use crate::{Mutation, Result};
 use tokio::runtime::Runtime;
@@ -87,7 +89,34 @@ impl<C: ILazyClient> Txn<C> {
     }
 }
 
-impl<C: ILazyClient> MutatedTxn<C> {
+pub trait Mutate: Query {
+    fn discard(self) -> Result<(), DgraphError>;
+
+    fn commit(self) -> Result<(), DgraphError>;
+
+    fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
+
+    fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
+
+    fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+
+    fn upsert_with_vars<Q, K, V, M>(
+        self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+}
+
+impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     ///
     /// Discard transaction
     ///
@@ -95,7 +124,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    pub fn discard(self) -> Result<(), DgraphError> {
+    fn discard(self) -> Result<(), DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
@@ -111,7 +140,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    pub fn commit(self) -> Result<(), DgraphError> {
+    fn commit(self) -> Result<(), DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
@@ -136,7 +165,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Mutate, Client};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Serialize;
@@ -176,7 +205,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// }
     /// ```
     ///
-    pub fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+    fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
@@ -205,7 +234,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Serialize;
@@ -244,7 +273,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// }
     /// ```
     ///
-    pub fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+    fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
@@ -273,7 +302,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with one mutation
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// #[cfg(feature = "acl")]
@@ -314,7 +343,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -359,10 +388,10 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// ```      
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
+        M: Into<UpsertMutation> + Send + Sync,
     {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
@@ -393,7 +422,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with only one mutation
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -437,7 +466,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -484,7 +513,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// ```    
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub fn upsert_with_vars<Q, K, V, M>(
+    fn upsert_with_vars<Q, K, V, M>(
         self,
         query: Q,
         vars: HashMap<K, V>,
@@ -494,7 +523,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
+        M: Into<UpsertMutation> + Send + Sync,
     {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);

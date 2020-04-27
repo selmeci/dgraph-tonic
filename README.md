@@ -136,7 +136,7 @@ dgraph-tonic = { version = "0.4", features = ["sync"] }
 ```
 
 ```rust
-use dgraph_tonic::sync::Client;
+use dgraph_tonic::sync::{Mutate, Client};
 
 fn main() {
   let p = Person {
@@ -205,12 +205,12 @@ Only for Mutated transaction must be always called `txn.dicard().await?` or `txn
 
 ### Run a mutation
 
-`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exist helper functions for JSON format (`mu.set_set_json(), mu.set_delete_json()`)
+`txn.mutate(mu).await?` runs a mutation. It takes in a `Mutation` object. You can set the data using JSON or RDF N-Quad format. There exist helper functions for JSON format (`mu.set_set_json(), mu.set_delete_json()`). All mutation operations are defined in `Mutate` trait.
 
 Example:
 
 ```rust
-use dgraph_tonic::Client;
+use dgraph_tonic::{Mutate, Client};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -242,7 +242,7 @@ In `dgraph-1-0` a `Mutation::with_ignored_index_conflict()` can be applied on a 
 
 ### Run a query
 
-You can run a query by calling `txn.query(q)`. You will need to pass in a GraphQL+- query string. If you want to pass an additional map of any variables that you might want to set in the query, call `txn.query_with_vars(q, vars)` with the variables map as second argument.
+You can run a query by calling `txn.query(q)`. You will need to pass in a GraphQL+- query string. If you want to pass an additional map of any variables that you might want to set in the query, call `txn.query_with_vars(q, vars)` with the variables map as second argument. All query operations are defined in `Query` trait.
 
 Let's run the following query with a variable \$a:
 
@@ -259,7 +259,7 @@ query all($a: string) {
 `Response` provides function `try_into()` which can be used for transforming returned JSON into coresponding struct object which implements serde `Deserialize` traits.
 
 ```rust
-use dgraph_tonic::Client;
+use dgraph_tonic::{Client, Query};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -324,7 +324,7 @@ The `txn.upsert(query, mutation)` function allows you to run upserts consisting 
 To know more about upsert, we highly recommend going through the docs at https://docs.dgraph.io/mutations/#upsert-block.
 
 ```rust
-use dgraph_tonic::Client;
+use dgraph_tonic::{Mutate, Client};
 
 #[tokio::main]
 async fn main() {
@@ -352,7 +352,7 @@ The upsert block allows specifying a conditional mutation block using an `@if` d
 See more about Conditional Upsert [Here](https://docs.dgraph.io/mutations/#conditional-upsert).
 
 ```rust
-use dgraph_tonic::Client;
+use dgraph_tonic::{Client, Mutate};
 
 #[tokio::main]
 async fn main() {
@@ -378,7 +378,7 @@ A mutated transaction can be committed using the `txn.commit()` method. If your 
 An error will be returned if other transactions running concurrently modify the same data that was modified in this transaction. It is up to the user to retry transactions when they fail.
 
 ```rust
-use dgraph_tonic::Client;
+use dgraph_tonic::{Client, Mutate};
 
 #[tokio::main]
 async fn main() {

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnState, TxnVariant};
 use crate::txn::Txn as AsyncTxn;
-use crate::{DgraphError, Response, Result};
+use crate::{DgraphError, Query, Response, Result};
 use async_trait::async_trait;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;

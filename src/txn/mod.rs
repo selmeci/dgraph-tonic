@@ -9,10 +9,12 @@ use crate::errors::DgraphError;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::BestEffortTxn;
 pub use crate::txn::default::Txn;
-pub use crate::txn::mutated::MutatedTxn;
+pub use crate::txn::mutated::{Mutate, MutatedTxn};
 pub use crate::txn::read_only::ReadOnlyTxn;
 use crate::IDgraphClient;
 use crate::{Request, Response, TxnContext};
+
+use async_trait::async_trait;
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -64,7 +66,25 @@ impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
     }
 }
 
-impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
+#[async_trait]
+pub trait Query {
+    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync;
+
+    async fn query_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
+}
+
+#[async_trait]
+impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
@@ -82,7 +102,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use dgraph_tonic::{Client, Response};
+    /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
@@ -125,7 +145,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     /// }
     /// ```
     ///
-    pub async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
         Q: Into<String> + Send + Sync,
     {
@@ -151,7 +171,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use dgraph_tonic::{Client, Response};
+    /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
@@ -196,7 +216,7 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
-    pub async fn query_with_vars<Q, K, V>(
+    async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
         vars: HashMap<K, V>,
@@ -227,6 +247,8 @@ impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashMap;
 
     use serde_derive::{Deserialize, Serialize};
@@ -234,7 +256,7 @@ mod tests {
     use crate::client::Client;
     #[cfg(feature = "acl")]
     use crate::client::{AclClient, LazyDefaultChannel};
-    use crate::Mutation;
+    use crate::{Mutate, Mutation};
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {
