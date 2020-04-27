@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
 use crate::txn::default::Base;
-use crate::txn::{IState, Txn, TxnState, TxnVariant};
+use crate::txn::{IState, Query, Txn, TxnState, TxnVariant};
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
 use crate::IDgraphClient;
@@ -90,6 +90,423 @@ impl<C: ILazyClient> Txn<C> {
                 mutated: false,
             },
         }
+    }
+}
+
+///
+/// Allowed mutation operation in Dgraph
+///
+#[async_trait]
+pub trait Mutate: Query {
+    ///
+    /// Discard transaction
+    ///
+    /// # Errors
+    ///
+    /// Return gRPC error.
+    ///
+    async fn discard(mut self) -> Result<(), DgraphError>;
+
+    ///
+    /// Commit transaction
+    ///
+    /// # Errors
+    ///
+    /// Return gRPC error.
+    ///
+    async fn commit(self) -> Result<(), DgraphError>;
+
+    ///
+    /// Adding or removing data in Dgraph is called a mutation.
+    ///
+    /// # Arguments
+    ///
+    /// * `mu`: required mutations
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Mutate};
+    /// use serde::Serialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    ///#[derive(Serialize)]
+    /// struct Person {
+    ///   uid: String,
+    ///   name: String,
+    /// }
+    /// #[tokio::main]
+    /// async fn main() {   
+    ///    let p = Person {
+    ///        uid:  "_:alice".into(),
+    ///        name: "Alice".into(),
+    ///    };
+    ///
+    ///    let mut mu = Mutation::new();
+    ///    mu.set_set_json(&p).expect("JSON");
+    ///
+    ///    let client = client().await;
+    ///    let mut txn = client.new_mutated_txn();
+    ///    let result = txn.mutate(mu).await.expect("failed to create data");
+    ///    txn.commit().await.expect("Txn is not commited");
+    /// }
+    /// ```
+    ///
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
+
+    ///
+    /// Adding or removing data in Dgraph is called a mutation.
+    ///
+    /// Sometimes, you only want to commit a mutation, without querying anything further.
+    /// In such cases, you can use this function to indicate that the mutation must be immediately
+    /// committed.
+    ///
+    /// # Arguments
+    ///
+    /// * `mu`: required mutations
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Mutate};
+    /// use serde::Serialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    ///#[derive(Serialize)]
+    /// struct Person {
+    ///   uid: String,
+    ///   name: String,
+    /// }
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///    let p = Person {
+    ///        uid:  "_:alice".into(),
+    ///        name: "Alice".into(),
+    ///    };
+    ///
+    ///    let mut mu = Mutation::new();
+    ///    mu.set_set_json(&p).expect("JSON");
+    ///
+    ///    let client = client().await;
+    ///    let txn = client.new_mutated_txn();
+    ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
+    /// }
+    /// ```
+    ///
+    async fn mutate_and_commit_now(mut self, mu: Mutation)
+        -> Result<MutationResponse, DgraphError>;
+
+    ///
+    /// This function allows you to run upserts consisting of one query and one or more mutations.
+    /// Transaction is commited.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    /// # Example
+    ///
+    /// Upsert with one mutation
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query {
+    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
+    ///         }"#;
+    ///
+    ///     let mut mu = Mutation::new();
+    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///
+    ///     let client = client().await;
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");    
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
+    /// }
+    /// ```
+    ///
+    /// Upsert with more mutations
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
+    /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query {
+    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
+    ///         }"#;
+    ///
+    ///     let mut mu_1 = Mutation::new();
+    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     mu_1.set_cond("@if(eq(len(user), 1))");
+    ///
+    ///     let mut mu_2 = Mutation::new();
+    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///
+    ///     let client = client().await;
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// }
+    /// ```      
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+
+    ///
+    /// This function allows you to run upserts with query variables consisting of one query and one
+    /// ore more mutations.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    /// * `vars`: query variables
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    /// # Example
+    ///
+    /// Upsert with only one mutation
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
+    /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query users($email: string) {
+    ///             user as var(func: eq(email, $email))
+    ///         }"#;
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$email", "wrong_email@dgraph.io");
+    ///
+    ///     let mut mu = Mutation::new();
+    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///
+    ///     let client = client().await;
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
+    /// }
+    /// ```
+    ///
+    /// Upsert with more mutations
+    /// ```
+    /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
+    /// use std::collections::HashMap;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }     
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"
+    ///         query users($email: string) {
+    ///             user as var(func: eq(email, $email))
+    ///         }"#;
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$email","wrong_email@dgraph.io");
+    ///
+    ///     let mut mu_1 = Mutation::new();
+    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+    ///     mu_1.set_cond("@if(eq(len(user), 1))");
+    ///
+    ///     let mut mu_2 = Mutation::new();
+    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///
+    ///     let client = client().await;
+    ///     let op = Operation {
+    ///         schema: "email: string @index(exact) .".into(),
+    ///         ..Default::default()
+    ///     };
+    ///     client.alter(op).await.expect("Schema is not updated");    
+    ///     let txn = client.new_mutated_txn();
+    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
+    ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    /// }
+    /// ```    
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_with_vars<Q, K, V, M>(
+        mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+}
+
+#[async_trait]
+impl<C: ILazyClient> Mutate for MutatedTxn<C> {
+    async fn discard(mut self) -> Result<(), DgraphError> {
+        self.context.aborted = true;
+        self.commit_or_abort().await
+    }
+
+    async fn commit(self) -> Result<(), DgraphError> {
+        self.commit_or_abort().await
+    }
+
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
+            .await
+    }
+
+    async fn mutate_and_commit_now(
+        mut self,
+        mu: Mutation,
+    ) -> Result<MutationResponse, DgraphError> {
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
+            .await
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu, true)
+            .await
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_with_vars<Q, K, V, M>(
+        mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        self.do_mutation(query, vars, mu, true).await
     }
 }
 
@@ -176,385 +593,5 @@ impl<C: ILazyClient> MutatedTxn<C> {
             Ok(_txn_context) => Ok(()),
             Err(err) => Err(DgraphError::GrpcError(err)),
         }
-    }
-
-    ///
-    /// Discard transaction
-    ///
-    /// # Errors
-    ///
-    /// Return gRPC error.
-    ///
-    pub async fn discard(mut self) -> Result<(), DgraphError> {
-        self.context.aborted = true;
-        self.commit_or_abort().await
-    }
-
-    ///
-    /// Commit transaction
-    ///
-    /// # Errors
-    ///
-    /// Return gRPC error.
-    ///
-    pub async fn commit(self) -> Result<(), DgraphError> {
-        self.commit_or_abort().await
-    }
-
-    ///
-    /// Adding or removing data in Dgraph is called a mutation.
-    ///
-    /// # Arguments
-    ///
-    /// * `mu`: required mutations
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation};
-    /// use serde::Serialize;
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    ///#[derive(Serialize)]
-    /// struct Person {
-    ///   uid: String,
-    ///   name: String,
-    /// }
-    /// #[tokio::main]
-    /// async fn main() {   
-    ///    let p = Person {
-    ///        uid:  "_:alice".into(),
-    ///        name: "Alice".into(),
-    ///    };
-    ///
-    ///    let mut mu = Mutation::new();
-    ///    mu.set_set_json(&p).expect("JSON");
-    ///
-    ///    let client = client().await;
-    ///    let mut txn = client.new_mutated_txn();
-    ///    let result = txn.mutate(mu).await.expect("failed to create data");
-    ///    txn.commit().await.expect("Txn is not commited");
-    /// }
-    /// ```
-    ///
-    pub async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
-            .await
-    }
-
-    ///
-    /// Adding or removing data in Dgraph is called a mutation.
-    ///
-    /// Sometimes, you only want to commit a mutation, without querying anything further.
-    /// In such cases, you can use this function to indicate that the mutation must be immediately
-    /// committed.
-    ///
-    /// # Arguments
-    ///
-    /// * `mu`: required mutations
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation};
-    /// use serde::Serialize;
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    ///#[derive(Serialize)]
-    /// struct Person {
-    ///   uid: String,
-    ///   name: String,
-    /// }
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///    let p = Person {
-    ///        uid:  "_:alice".into(),
-    ///        name: "Alice".into(),
-    ///    };
-    ///
-    ///    let mut mu = Mutation::new();
-    ///    mu.set_set_json(&p).expect("JSON");
-    ///
-    ///    let client = client().await;
-    ///    let txn = client.new_mutated_txn();
-    ///    let result = txn.mutate_and_commit_now(mu).await.expect("failed to create data");
-    /// }
-    /// ```
-    ///
-    pub async fn mutate_and_commit_now(
-        mut self,
-        mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError> {
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
-            .await
-    }
-
-    ///
-    /// This function allows you to run upserts consisting of one query and one or more mutations.
-    /// Transaction is commited.
-    ///
-    ///
-    /// # Arguments
-    ///
-    /// * `q`: Dgraph query
-    /// * `mu`: required mutations
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
-    /// Upsert with one mutation
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation, Operation};
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let q = r#"
-    ///         query {
-    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
-    ///         }"#;
-    ///
-    ///     let mut mu = Mutation::new();
-    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    ///
-    ///     let client = client().await;
-    ///     let op = Operation {
-    ///         schema: "email: string @index(exact) .".into(),
-    ///         ..Default::default()
-    ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
-    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
-    /// }
-    /// ```
-    ///
-    /// Upsert with more mutations
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation, Operation};
-    /// use std::collections::HashMap;
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let q = r#"
-    ///         query {
-    ///             user as var(func: eq(email, "wrong_email@dgraph.io"))
-    ///         }"#;
-    ///
-    ///     let mut mu_1 = Mutation::new();
-    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    ///     mu_1.set_cond("@if(eq(len(user), 1))");
-    ///
-    ///     let mut mu_2 = Mutation::new();
-    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
-    ///
-    ///     let client = client().await;
-    ///     let op = Operation {
-    ///         schema: "email: string @index(exact) .".into(),
-    ///         ..Default::default()
-    ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
-    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
-    /// }
-    /// ```      
-    ///
-    #[cfg(feature = "dgraph-1-1")]
-    pub async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
-    {
-        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu, true)
-            .await
-    }
-
-    ///
-    /// This function allows you to run upserts with query variables consisting of one query and one
-    /// ore more mutations.
-    ///
-    ///
-    /// # Arguments
-    ///
-    /// * `q`: Dgraph query
-    /// * `mu`: required mutations
-    /// * `vars`: query variables
-    ///
-    /// # Errors
-    ///
-    /// * `GrpcError`: there is error in communication or server does not accept mutation
-    /// * `MissingTxnContext`: there is error in txn setup
-    ///
-    /// # Example
-    ///
-    /// Upsert with only one mutation
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation, Operation};
-    /// use std::collections::HashMap;
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let q = r#"
-    ///         query users($email: string) {
-    ///             user as var(func: eq(email, $email))
-    ///         }"#;
-    ///     let mut vars = HashMap::new();
-    ///     vars.insert("$email", "wrong_email@dgraph.io");
-    ///
-    ///     let mut mu = Mutation::new();
-    ///     mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    ///
-    ///     let client = client().await;
-    ///     let op = Operation {
-    ///         schema: "email: string @index(exact) .".into(),
-    ///         ..Default::default()
-    ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
-    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
-    /// }
-    /// ```
-    ///
-    /// Upsert with more mutations
-    /// ```
-    /// use dgraph_tonic::{Client, Mutation, Operation};
-    /// use std::collections::HashMap;
-    /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
-    ///
-    /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
-    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
-    /// }
-    ///
-    /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
-    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
-    ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let q = r#"
-    ///         query users($email: string) {
-    ///             user as var(func: eq(email, $email))
-    ///         }"#;
-    ///     let mut vars = HashMap::new();
-    ///     vars.insert("$email","wrong_email@dgraph.io");
-    ///
-    ///     let mut mu_1 = Mutation::new();
-    ///     mu_1.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-    ///     mu_1.set_cond("@if(eq(len(user), 1))");
-    ///
-    ///     let mut mu_2 = Mutation::new();
-    ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
-    ///
-    ///     let client = client().await;
-    ///     let op = Operation {
-    ///         schema: "email: string @index(exact) .".into(),
-    ///         ..Default::default()
-    ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
-    ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
-    ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
-    /// }
-    /// ```    
-    ///
-    #[cfg(feature = "dgraph-1-1")]
-    pub async fn upsert_with_vars<Q, K, V, M>(
-        mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-        mu: M,
-    ) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        K: Into<String> + Send + Sync + Eq + Hash,
-        V: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
-    {
-        self.do_mutation(query, vars, mu, true).await
     }
 }

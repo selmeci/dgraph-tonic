@@ -14,7 +14,9 @@ pub use crate::client::TlsClient;
 #[cfg(feature = "acl")]
 pub use crate::client::{AclClient, LazyDefaultChannel};
 pub use crate::errors::{ClientError, DgraphError};
-pub use crate::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn, TxnState, TxnVariant};
+pub use crate::txn::{
+    BestEffortTxn, Mutate, MutatedTxn, Query, ReadOnlyTxn, Txn, TxnState, TxnVariant,
+};
 
 mod api;
 mod client;

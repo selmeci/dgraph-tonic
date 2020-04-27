@@ -1,7 +1,7 @@
-pub(crate) use crate::sync::txn::best_effort::BestEffortTxn;
-pub(crate) use crate::sync::txn::default::Txn;
-pub(crate) use crate::sync::txn::mutated::MutatedTxn;
-pub(crate) use crate::sync::txn::read_only::ReadOnlyTxn;
+pub use crate::sync::txn::best_effort::BestEffortTxn;
+pub use crate::sync::txn::default::Txn;
+pub use crate::sync::txn::mutated::{Mutate, MutatedTxn};
+pub use crate::sync::txn::read_only::ReadOnlyTxn;
 use crate::{DgraphError, Response, Result};
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -59,7 +59,10 @@ impl<S: IState> DerefMut for TxnVariant<S> {
     }
 }
 
-impl<S: IState> TxnVariant<S> {
+///
+/// All Dgaph transaction types can performe a queries
+///
+pub trait Query {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
@@ -78,7 +81,7 @@ impl<S: IState> TxnVariant<S> {
     /// ```
     /// use std::collections::HashMap;
     /// use dgraph_tonic::Response;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Query, Client};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Deserialize;
@@ -122,12 +125,9 @@ impl<S: IState> TxnVariant<S> {
     /// }
     /// ```
     ///
-    pub fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
-        Q: Into<String> + Send + Sync,
-    {
-        self.query_with_vars(query, HashMap::<String, String, _>::new())
-    }
+        Q: Into<String> + Send + Sync;
 
     ///
     /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
@@ -148,7 +148,7 @@ impl<S: IState> TxnVariant<S> {
     /// ```
     /// use std::collections::HashMap;
     /// use dgraph_tonic::Response;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Query, Client};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Deserialize;
@@ -194,7 +194,26 @@ impl<S: IState> TxnVariant<S> {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
-    pub fn query_with_vars<Q, K, V>(
+    fn query_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
+}
+
+impl<S: IState> Query for TxnVariant<S> {
+    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+    {
+        self.query_with_vars(query, HashMap::<String, String, _>::new())
+    }
+
+    fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
         vars: HashMap<K, V>,
@@ -219,6 +238,7 @@ mod tests {
     #[cfg(feature = "acl")]
     use crate::sync::client::AclClient;
     use crate::sync::client::Client;
+    use crate::sync::{Mutate, Query};
     use crate::Mutation;
 
     #[cfg(not(feature = "acl"))]

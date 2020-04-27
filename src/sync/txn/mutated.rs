@@ -8,12 +8,14 @@ use async_trait::async_trait;
 
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
-use crate::sync::txn::{IState, Txn, TxnVariant};
+use crate::sync::txn::{IState, Query, Txn, TxnVariant};
+use crate::txn::mutated::Mutate as AsyncMutate;
 #[cfg(feature = "dgraph-1-1")]
 use crate::txn::mutated::UpsertMutation;
 use crate::txn::MutatedTxn as AsyncMutatedTxn;
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
+use crate::Query as AsyncQuery;
 use crate::Response;
 use crate::{Mutation, Result};
 use tokio::runtime::Runtime;
@@ -87,7 +89,10 @@ impl<C: ILazyClient> Txn<C> {
     }
 }
 
-impl<C: ILazyClient> MutatedTxn<C> {
+///
+/// Allowed mutation operation in Dgraph
+///
+pub trait Mutate: Query {
     ///
     /// Discard transaction
     ///
@@ -95,14 +100,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    pub fn discard(self) -> Result<(), DgraphError> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
-        rt.block_on(async move {
-            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
-            async_txn.discard().await
-        })
-    }
+    fn discard(self) -> Result<(), DgraphError>;
 
     ///
     /// Commit transaction
@@ -111,14 +109,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    pub fn commit(self) -> Result<(), DgraphError> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
-        rt.block_on(async move {
-            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
-            async_txn.commit().await
-        })
-    }
+    fn commit(self) -> Result<(), DgraphError>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -136,7 +127,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Mutate, Client};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Serialize;
@@ -176,14 +167,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// }
     /// ```
     ///
-    pub fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
-        rt.block_on(async move {
-            let mut async_txn = async_txn.lock().expect("MutatedTxn");
-            async_txn.mutate(mu).await
-        })
-    }
+    fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -205,7 +189,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     ///
     /// ```
     /// use dgraph_tonic::Mutation;
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use serde::Serialize;
@@ -244,14 +228,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// }
     /// ```
     ///
-    pub fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
-        rt.block_on(async move {
-            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
-            async_txn.mutate_and_commit_now(mu).await
-        })
-    }
+    fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
 
     ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
@@ -273,7 +250,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with one mutation
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// #[cfg(feature = "acl")]
@@ -314,7 +291,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -359,18 +336,10 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// ```      
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
-    {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
-        rt.block_on(async move {
-            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
-            async_txn.upsert(query, mu).await
-        })
-    }
+        M: Into<UpsertMutation> + Send + Sync;
 
     ///
     /// This function allows you to run upserts with query variables consisting of one query and one
@@ -393,7 +362,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with only one mutation
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -437,7 +406,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// Upsert with more mutations
     /// ```
     /// use dgraph_tonic::{Mutation, Operation};
-    /// use dgraph_tonic::sync::Client;
+    /// use dgraph_tonic::sync::{Client, Mutate};
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClient;
     /// use std::collections::HashMap;
@@ -484,7 +453,7 @@ impl<C: ILazyClient> MutatedTxn<C> {
     /// ```    
     ///
     #[cfg(feature = "dgraph-1-1")]
-    pub fn upsert_with_vars<Q, K, V, M>(
+    fn upsert_with_vars<Q, K, V, M>(
         self,
         query: Q,
         vars: HashMap<K, V>,
@@ -494,7 +463,72 @@ impl<C: ILazyClient> MutatedTxn<C> {
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
-        M: Into<UpsertMutation>,
+        M: Into<UpsertMutation> + Send + Sync;
+}
+
+impl<C: ILazyClient> Mutate for MutatedTxn<C> {
+    fn discard(self) -> Result<(), DgraphError> {
+        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.extra.async_txn);
+        rt.block_on(async move {
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            async_txn.discard().await
+        })
+    }
+
+    fn commit(self) -> Result<(), DgraphError> {
+        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.extra.async_txn);
+        rt.block_on(async move {
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            async_txn.commit().await
+        })
+    }
+
+    fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.extra.async_txn);
+        rt.block_on(async move {
+            let mut async_txn = async_txn.lock().expect("MutatedTxn");
+            async_txn.mutate(mu).await
+        })
+    }
+
+    fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.extra.async_txn);
+        rt.block_on(async move {
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            async_txn.mutate_and_commit_now(mu).await
+        })
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.extra.async_txn);
+        rt.block_on(async move {
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            async_txn.upsert(query, mu).await
+        })
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    fn upsert_with_vars<Q, K, V, M>(
+        self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
     {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
