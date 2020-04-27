@@ -39,7 +39,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph-tonic = "0.4"
+dgraph-tonic = "0.5"
 ```
 
 Default feature is `dgraph-1-1`.
@@ -48,14 +48,14 @@ All avaiable features can be activeted with:
 
 ```toml
 [dependencies]
-dgraph-tonic = {version = "0.4", features = ["all"]}
+dgraph-tonic = {version = "0.5", features = ["all"]}
 ```
 
 If you want to use Dgraph v1.0.x, add this dependency:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.4", features = ["dgraph-1-0"], default-features = false }
+dgraph-tonic = { version = "0.5", features = ["dgraph-1-0"], default-features = false }
 ```
 
 Supported features:
@@ -104,7 +104,7 @@ Alternatively, secure tls client is avaible in `tls` feature:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.4", features = ["tls"] }
+dgraph-tonic = { version = "0.5", features = ["tls"] }
 ```
 
 ```rust
@@ -132,7 +132,7 @@ Alternatively, synchronous clients (Tls, Acl) are avaible with `sync` feature in
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.4", features = ["sync"] }
+dgraph-tonic = { version = "0.5", features = ["sync"] }
 ```
 
 ```rust
@@ -400,7 +400,7 @@ This enterprise Dgraph feature which can be activated with:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.4", features = ["acl"] }
+dgraph-tonic = { version = "0.5", features = ["acl"] }
 ```
 
 [Access Control List (ACL)](https://dgraph.io/docs/enterprise-features/#access-control-lists) provides access protection to your data stored in Dgraph. When the ACL feature is turned on, a client must authenticate with a username and password before executing any transactions, and is only allowed to access the data permitted by the ACL rules.
