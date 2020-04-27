@@ -93,39 +93,11 @@ impl<C: ILazyClient> Txn<C> {
     }
 }
 
+///
+/// Allowed mutation operation in Dgraph
+///
 #[async_trait]
 pub trait Mutate: Query {
-    async fn discard(mut self) -> Result<(), DgraphError>;
-
-    async fn commit(self) -> Result<(), DgraphError>;
-
-    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
-
-    async fn mutate_and_commit_now(mut self, mu: Mutation)
-        -> Result<MutationResponse, DgraphError>;
-
-    #[cfg(feature = "dgraph-1-1")]
-    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        M: Into<UpsertMutation> + Send + Sync;
-
-    #[cfg(feature = "dgraph-1-1")]
-    async fn upsert_with_vars<Q, K, V, M>(
-        mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-        mu: M,
-    ) -> Result<MutationResponse, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        K: Into<String> + Send + Sync + Eq + Hash,
-        V: Into<String> + Send + Sync,
-        M: Into<UpsertMutation> + Send + Sync;
-}
-
-#[async_trait]
-impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     ///
     /// Discard transaction
     ///
@@ -133,10 +105,7 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    async fn discard(mut self) -> Result<(), DgraphError> {
-        self.context.aborted = true;
-        self.commit_or_abort().await
-    }
+    async fn discard(mut self) -> Result<(), DgraphError>;
 
     ///
     /// Commit transaction
@@ -145,9 +114,7 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     ///
     /// Return gRPC error.
     ///
-    async fn commit(self) -> Result<(), DgraphError> {
-        self.commit_or_abort().await
-    }
+    async fn commit(self) -> Result<(), DgraphError>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -202,10 +169,7 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     /// }
     /// ```
     ///
-    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
-            .await
-    }
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -264,13 +228,8 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     /// }
     /// ```
     ///
-    async fn mutate_and_commit_now(
-        mut self,
-        mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError> {
-        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
-            .await
-    }
+    async fn mutate_and_commit_now(mut self, mu: Mutation)
+        -> Result<MutationResponse, DgraphError>;
 
     ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
@@ -377,11 +336,7 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
-        M: Into<UpsertMutation> + Send + Sync,
-    {
-        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu, true)
-            .await
-    }
+        M: Into<UpsertMutation> + Send + Sync;
 
     ///
     /// This function allows you to run upserts with query variables consisting of one query and one
@@ -490,6 +445,54 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     /// }
     /// ```    
     ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_with_vars<Q, K, V, M>(
+        mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+}
+
+#[async_trait]
+impl<C: ILazyClient> Mutate for MutatedTxn<C> {
+    async fn discard(mut self) -> Result<(), DgraphError> {
+        self.context.aborted = true;
+        self.commit_or_abort().await
+    }
+
+    async fn commit(self) -> Result<(), DgraphError> {
+        self.commit_or_abort().await
+    }
+
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
+            .await
+    }
+
+    async fn mutate_and_commit_now(
+        mut self,
+        mu: Mutation,
+    ) -> Result<MutationResponse, DgraphError> {
+        self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
+            .await
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        self.do_mutation(query, HashMap::<String, String>::with_capacity(0), mu, true)
+            .await
+    }
+
     #[cfg(feature = "dgraph-1-1")]
     async fn upsert_with_vars<Q, K, V, M>(
         mut self,

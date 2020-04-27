@@ -66,25 +66,11 @@ impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
     }
 }
 
+///
+/// All Dgaph transaction types can performe a queries
+///
 #[async_trait]
 pub trait Query {
-    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
-    where
-        Q: Into<String> + Send + Sync;
-
-    async fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        K: Into<String> + Send + Sync + Eq + Hash,
-        V: Into<String> + Send + Sync;
-}
-
-#[async_trait]
-impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
@@ -147,11 +133,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
     ///
     async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
-        Q: Into<String> + Send + Sync,
-    {
-        self.query_with_vars(query, HashMap::<String, String, _>::new())
-            .await
-    }
+        Q: Into<String> + Send + Sync;
 
     ///
     /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
@@ -216,6 +198,27 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
+    async fn query_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
+}
+
+#[async_trait]
+impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
+    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+    {
+        self.query_with_vars(query, HashMap::<String, String, _>::new())
+            .await
+    }
+
     async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,

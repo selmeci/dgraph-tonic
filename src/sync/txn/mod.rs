@@ -59,23 +59,10 @@ impl<S: IState> DerefMut for TxnVariant<S> {
     }
 }
 
+///
+/// All Dgaph transaction types can performe a queries
+///
 pub trait Query {
-    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
-    where
-        Q: Into<String> + Send + Sync;
-
-    fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
-    where
-        Q: Into<String> + Send + Sync,
-        K: Into<String> + Send + Sync + Eq + Hash,
-        V: Into<String> + Send + Sync;
-}
-
-impl<S: IState> Query for TxnVariant<S> {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
@@ -140,10 +127,7 @@ impl<S: IState> Query for TxnVariant<S> {
     ///
     fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
     where
-        Q: Into<String> + Send + Sync,
-    {
-        self.query_with_vars(query, HashMap::<String, String, _>::new())
-    }
+        Q: Into<String> + Send + Sync;
 
     ///
     /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
@@ -210,6 +194,25 @@ impl<S: IState> Query for TxnVariant<S> {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```    
+    fn query_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
+}
+
+impl<S: IState> Query for TxnVariant<S> {
+    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+    {
+        self.query_with_vars(query, HashMap::<String, String, _>::new())
+    }
+
     fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
