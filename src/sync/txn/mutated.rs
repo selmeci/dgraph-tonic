@@ -98,11 +98,13 @@ pub trait Mutate: Query {
 
     fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
 
+    #[cfg(feature = "dgraph-1-1")]
     fn upsert<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
 
+    #[cfg(feature = "dgraph-1-1")]
     fn upsert_with_vars<Q, K, V, M>(
         self,
         query: Q,

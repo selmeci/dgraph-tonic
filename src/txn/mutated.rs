@@ -104,11 +104,13 @@ pub trait Mutate: Query {
     async fn mutate_and_commit_now(mut self, mu: Mutation)
         -> Result<MutationResponse, DgraphError>;
 
+    #[cfg(feature = "dgraph-1-1")]
     async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
 
+    #[cfg(feature = "dgraph-1-1")]
     async fn upsert_with_vars<Q, K, V, M>(
         mut self,
         query: Q,
