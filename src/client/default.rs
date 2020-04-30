@@ -27,7 +27,7 @@ impl LazyDefaultChannel {
 impl LazyChannel for LazyDefaultChannel {
     async fn channel(&mut self) -> Result<Channel, Error> {
         if let Some(channel) = &self.channel {
-            return Ok(channel.to_owned());
+            Ok(channel.to_owned())
         } else {
             let endpoint: Endpoint = self.uri.to_owned().into();
             let channel = endpoint.connect().await?;
