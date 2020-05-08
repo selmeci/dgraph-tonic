@@ -12,10 +12,10 @@ pub use crate::client::Endpoints;
 #[cfg(feature = "tls")]
 pub use crate::client::TlsClient;
 #[cfg(feature = "acl")]
-pub use crate::client::{AclClient, LazyDefaultChannel};
+pub use crate::client::{AclClient, LazyDefaultChannel, ILazyClient};
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
-    BestEffortTxn, Mutate, MutatedTxn, Query, ReadOnlyTxn, Txn, TxnState, TxnVariant,
+    BestEffortTxn, Mutate, MutatedTxn, Query, ReadOnlyTxn, Txn, TxnState, TxnVariant, IState
 };
 
 mod api;
