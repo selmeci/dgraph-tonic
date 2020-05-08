@@ -7,12 +7,12 @@ use crate::api::IDgraphClient;
 pub use crate::api::{
     Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext, Version,
 };
-pub use crate::client::{Client, ILazyClient};
+pub use crate::client::{Client, ILazyClient, LazyDefaultChannel};
 pub use crate::client::Endpoints;
 #[cfg(feature = "tls")]
 pub use crate::client::TlsClient;
 #[cfg(feature = "acl")]
-pub use crate::client::{AclClient, LazyDefaultChannel};
+pub use crate::client::AclClient;
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
     BestEffortTxn, Mutate, MutatedTxn, Query, ReadOnlyTxn, Txn, TxnState, TxnVariant, IState
