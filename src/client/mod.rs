@@ -18,7 +18,7 @@ use crate::api::Version;
 #[cfg(feature = "acl")]
 pub use crate::client::acl::AclClient;
 pub use crate::client::default::Client;
-pub use crate::client::lazy::{ILazyClient, LazyChannel};
+pub use crate::client::lazy::{ILazyClient, LazyChannel, LazyClient};
 #[cfg(feature = "tls")]
 pub use crate::client::tls::TlsClient;
 
