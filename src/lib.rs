@@ -7,7 +7,7 @@ use crate::api::IDgraphClient;
 pub use crate::api::{
     Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext, Version,
 };
-pub use crate::client::{Client, ILazyClient, LazyDefaultChannel};
+pub use crate::client::{Client, ILazyClient, LazyChannel};
 pub use crate::client::Endpoints;
 #[cfg(feature = "tls")]
 pub use crate::client::TlsClient;
