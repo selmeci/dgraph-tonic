@@ -1,6 +1,6 @@
 [package]
 name = "dgraph-tonic"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Selmeci <selmeci.roman@gmail.com>"]
 edition = "2018"
 description = "A rust async/async client for Dgraph database build with Tonic crate"
