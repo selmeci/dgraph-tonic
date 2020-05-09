@@ -51,6 +51,12 @@ impl ClientState {
     }
 }
 
+impl Default for ClientState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[async_trait]
 pub trait IClient {
     type AsyncClient;

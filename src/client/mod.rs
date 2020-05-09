@@ -34,7 +34,7 @@ pub(crate) mod tls;
 ///
 /// return random cloned item from vector
 ///
-pub(crate) fn rnd_item<T: Clone>(items: &Vec<T>) -> T {
+pub(crate) fn rnd_item<T: Clone>(items: &[T]) -> T {
     let mut rng = rand::thread_rng();
     let i = rng.gen_range(0, items.len());
     if let Some(item) = items.get(i) {
@@ -87,7 +87,7 @@ pub trait IClient: Debug + Send + Sync {
 ///
 /// Client state.
 ///
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ClientState;
 
 impl ClientState {
@@ -95,7 +95,7 @@ impl ClientState {
     /// Create new client state
     ///
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
 }
 
