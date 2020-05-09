@@ -62,7 +62,7 @@ impl<S: IState> DerefMut for TxnVariant<S> {
 ///
 /// All Dgaph transaction types can performe a queries
 ///
-pub trait Query {
+pub trait Query: Send + Sync {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///

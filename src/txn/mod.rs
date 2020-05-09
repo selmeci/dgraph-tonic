@@ -70,7 +70,7 @@ impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
 /// All Dgaph transaction types can performe a queries
 ///
 #[async_trait]
-pub trait Query {
+pub trait Query: Send + Sync {
     ///
     /// You can run a query by calling `txn.query(q)`.
     ///
