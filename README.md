@@ -180,12 +180,12 @@ async fn main() {
 
 Transaction is modeled with [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/). The typestate pattern is an API design pattern that encodes information about an object's run-time state in its compile-time type. This principle allows us to identify some type of errors, like mutation in read only transaction, during compilation. Transaction types are:
 
-- *Default*: can be transformed into ReadOnly, BestEffort, Muated. Can perform `query` and `query_with_vars` actions.
-- *ReadOnly*: useful to increase read speed because they can circumvent the usual consensus protocol. Can perform `query` and `query_with_vars` actions.
+- *Default*: can be transformed into ReadOnly, BestEffort, Mutated. Can perform `query` and `query_with_vars` actions.
+- *ReadOnly*: useful to increase read speed because they can circumvent the usual consensus protocol. Can perform `query` and `query_with_vars` actions defined in `Query` trait.
 - *BestEffort*: Read-only queries can optionally be set as best-effort. Using this flag will ask the Dgraph Alpha to try to get timestamps from memory on a best-effort basis to reduce the number of outbound requests to Zero. This may yield improved latencies in read-bound workloads where linearizable reads are not strictly needed. Can permorm `query` and `query_with_vars` actions.
 - *Mutated*: can perform all actions as default transaction and can modify data in DB. Can be created only from default transaction.
 
-Client provides several factory methods for transactions. This operations incur no network overhead.
+Client provides several factory methods for transactions. These operations incur no network overhead.
 
 ```rust
 use dgraph_tonic::Client;
@@ -202,6 +202,26 @@ async fn main() {
 ```
 
 Only for Mutated transaction must be always called `txn.dicard().await?` or `txn.commit().await?` function before txn variable is dropped.
+
+Because internal state of transaction depends on used variant (plain, tls, plain + acl, tls + acl x read only, mutated) you should use [traits object](https://doc.rust-lang.org/reference/types/trait-object.html) for transactions variables used in your structures or functions.
+```rust
+struct MyTxn {
+    readonly_txn: Box<dyn Query>,
+    mutated_txn: Box<dyn Mutate>,
+   
+}
+```
+
+or as returning parameter from function
+```rust
+fn my_query_operation() -> impl Query {
+    //your code
+}
+
+fn my_mutation_operation() -> impl Mutate {
+    //your code
+}
+```
 
 ### Run a mutation
 
