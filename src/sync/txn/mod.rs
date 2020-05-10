@@ -1,6 +1,6 @@
 pub use crate::sync::txn::best_effort::BestEffortTxn;
 pub use crate::sync::txn::default::Txn;
-pub use crate::sync::txn::mutated::{Mutate, MutatedTxn};
+pub use crate::sync::txn::mutated::{Mutate, MutatedTxn, MutationResponse};
 pub use crate::sync::txn::read_only::ReadOnlyTxn;
 use crate::{DgraphError, Response, Result};
 use async_trait::async_trait;

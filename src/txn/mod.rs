@@ -9,7 +9,7 @@ use crate::errors::DgraphError;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::BestEffortTxn;
 pub use crate::txn::default::Txn;
-pub use crate::txn::mutated::{Mutate, MutatedTxn};
+pub use crate::txn::mutated::{Mutate, MutatedTxn, MutationResponse};
 pub use crate::txn::read_only::ReadOnlyTxn;
 use crate::IDgraphClient;
 use crate::{Request, Response, TxnContext};

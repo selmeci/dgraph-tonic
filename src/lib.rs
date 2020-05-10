@@ -15,7 +15,8 @@ pub use crate::client::TlsClient;
 pub use crate::client::{AclClient, LazyDefaultChannel};
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
-    BestEffortTxn, Mutate, MutatedTxn, Query, ReadOnlyTxn, Txn, TxnState, TxnVariant,
+    BestEffortTxn, Mutate, MutatedTxn, MutationResponse, Query, ReadOnlyTxn, Txn, TxnState,
+    TxnVariant,
 };
 
 mod api;
