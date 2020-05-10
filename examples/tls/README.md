@@ -110,14 +110,35 @@ dg.1310839545.2 => 0x756b
 dg.1310839545.3 => 0x756c
 
 Number of people named "Alice": 1
-{ uid: '0x7569',
-  name: 'Alice',
-  age: 26,
-  married: true,
-  loc: { type: 'Point', coordinates: [ 1.1, 2 ] },
-  dob: '1980-02-01T17:30:00Z',
-  friend: [ { name: 'Bob', age: 24 }, { name: 'Charlie', age: 29 } ],
-  school: [ { name: 'Crown Public School' } ] }
+Person {
+    uid: "0x1",
+    name: "Alice",
+    age: 26,
+    married: true,
+    loc: Location {
+        t: "Point",
+        coordinates: [
+            1.1,
+            2.0,
+        ],
+    },
+    dob: 1980-01-01T23:00:00Z,
+    friend: [
+        Friend {
+            name: "Bob",
+            age: 24,
+        },
+        Friend {
+            name: "Charlie",
+            age: 29,
+        },
+    ],
+    school: [
+        School {
+            name: "Crown Public School",
+        },
+    ],
+}
 
 DONE!
 ```

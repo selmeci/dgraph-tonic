@@ -203,11 +203,11 @@ async fn main() {
 
 Only for Mutated transaction must be always called `txn.dicard().await?` or `txn.commit().await?` function before txn variable is dropped.
 
-Because internal state of transaction depends on used variant (plain, tls, plain + acl, tls + acl x read only, mutated) you should use [traits object](https://doc.rust-lang.org/reference/types/trait-object.html) for transactions variables used in your structures or functions.
+Because internal state of transaction depends on used variant (plain, tls, plain + acl, tls + acl x read only, mutated) you should use traits in your structures for transaction parameters.
 ```rust
-struct MyTxn {
-    readonly_txn: Box<dyn Query>,
-    mutated_txn: Box<dyn Mutate>,
+struct MyTxn<Q: Query, M: Mutate> {
+    readonly_txn: Q,
+    mutated_txn: M,
    
 }
 ```
