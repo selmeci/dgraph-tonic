@@ -66,6 +66,17 @@ impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
     }
 }
 
+impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
+    ///
+    /// Return new transaction of same variant with default state
+    ///
+    pub fn clone_and_reset(&mut self) -> Self {
+        let mut result = self.clone();
+        result.context = Default::default();
+        result
+    }
+}
+
 ///
 /// All Dgaph transaction types can performe a queries
 ///
