@@ -19,6 +19,13 @@ jobs:
         - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
         - cargo fmt -- --check
         - cargo check
+    - name: Check my txn example
+      rust: stable
+      script:
+        - cd examples/my_txn
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
+        - cargo fmt -- --check
+        - cargo check
     - name: Dgraph 1.0 tests
       rust: stable
       before_install:
