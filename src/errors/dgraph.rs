@@ -13,4 +13,6 @@ pub enum Error {
     EmptyTxn,
     #[fail(display = "Dgraph: Missing Txn context")]
     MissingTxnContext,
+    #[fail(display = "Dgraph: Txn is already committed")]
+    TxnCommitted,
 }
