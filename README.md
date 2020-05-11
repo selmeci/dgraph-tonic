@@ -223,7 +223,7 @@ fn my_mutation_operation() -> impl Mutate {
 }
 ```
 
-If you cannot use generics or traits object you can use predefined exported transaction types: *Txn, TxnReadOnly, TxnBestEffort, TxnMutated, TxnTls, TxnTlsReadOnly, TxnTlsBestEffort, TxnTlsMutated, TxnAcl, TxnAclReadOnly, TxnAclBestEffort, TxnAclMutated*
+If you cannot use generics or traits object you can use predefined exported transaction types: *Txn, TxnReadOnly, TxnBestEffort, TxnMutated, TxnTls, TxnTlsReadOnly, TxnTlsBestEffort, TxnTlsMutated, TxnAcl, TxnAclReadOnly, TxnAclBestEffort, TxnAclMutated, TxnAclTls, TxnAclTlsReadOnly, TxnAclTlsBestEffort, TxnAclTlsMutated*
 
 ### Run a mutation
 
