@@ -60,6 +60,17 @@ impl<C: LazyChannel> IClient for Acl<C> {
 pub type AclClient<C> = ClientVariant<Acl<C>>;
 
 ///
+/// Logged default client
+///
+pub type AclDefaultClient = AclClient<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Logged tls client
+///
+#[cfg(feature = "tls")]
+pub type AclTlsClient = AclClient<LazyAclClient<LazyTlsChannel>>;
+
+///
 /// Txn over http with AC:
 ///
 pub type DefaultAclTxn = SyncTxn<LazyAclClient<LazyDefaultChannel>>;

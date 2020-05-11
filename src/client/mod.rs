@@ -15,10 +15,10 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
 use crate::api::Version;
-#[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::client::acl::TlsAclTxn;
 #[cfg(feature = "acl")]
-pub use crate::client::acl::{AclClient, DefaultAclTxn};
+pub use crate::client::acl::{AclClient, AclDefaultClient, DefaultAclTxn};
+#[cfg(all(feature = "acl", feature = "tls"))]
+pub use crate::client::acl::{AclTlsClient, TlsAclTxn};
 pub use crate::client::default::{Client, DefaultTxn};
 pub(crate) use crate::client::lazy::ILazyClient;
 use crate::client::lazy::LazyChannel;
