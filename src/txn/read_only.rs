@@ -33,13 +33,13 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
 ///
 /// ReadOnly variant of transaction
 ///
-pub type ReadOnlyTxn<C> = TxnVariant<ReadOnly<C>, C>;
+pub type TxnReadOnlyType<C> = TxnVariant<ReadOnly<C>, C>;
 
 impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new read only transaction from default transaction state
     ///
-    pub fn read_only(self) -> ReadOnlyTxn<C> {
+    pub fn read_only(self) -> TxnReadOnlyType<C> {
         TxnVariant {
             state: self.state,
             extra: ReadOnly { base: self.extra },

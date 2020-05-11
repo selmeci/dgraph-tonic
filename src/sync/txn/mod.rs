@@ -1,7 +1,7 @@
-pub use crate::sync::txn::best_effort::BestEffortTxn;
+pub use crate::sync::txn::best_effort::TxnBestEffortType;
 pub use crate::sync::txn::default::TxnType;
-pub use crate::sync::txn::mutated::{Mutate, MutatedTxn, MutationResponse};
-pub use crate::sync::txn::read_only::ReadOnlyTxn;
+pub use crate::sync::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
+pub use crate::sync::txn::read_only::TxnReadOnlyType;
 use crate::{DgraphError, Response, Result};
 use async_trait::async_trait;
 use std::collections::HashMap;

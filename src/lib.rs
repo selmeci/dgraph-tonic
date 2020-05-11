@@ -9,16 +9,21 @@ pub use crate::api::{
 };
 pub use crate::client::Endpoints;
 #[cfg(feature = "acl")]
-pub use crate::client::{AclClient, AclClientType, LazyDefaultChannel, TxnAcl};
+pub use crate::client::{
+    AclClient, AclClientType, LazyDefaultChannel, TxnAcl, TxnAclBestEffort, TxnAclMutated,
+    TxnAclReadOnly,
+};
 #[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::client::{AclTlsClient, TxnAclTls};
-pub use crate::client::{Client, Txn};
+pub use crate::client::{
+    AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
+};
+pub use crate::client::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
 #[cfg(feature = "tls")]
 pub use crate::client::{TlsClient, TxnTls};
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
-    BestEffortTxn, Mutate, MutatedTxn, MutationResponse, Query, ReadOnlyTxn, TxnState, TxnType,
-    TxnVariant,
+    Mutate, MutationResponse, Query, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnState,
+    TxnType, TxnVariant,
 };
 
 mod api;

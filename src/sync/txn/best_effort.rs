@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use crate::client::ILazyClient;
-use crate::sync::txn::{IState, ReadOnlyTxn, TxnVariant};
-use crate::txn::BestEffortTxn as AsyncBestEffortTxn;
+use crate::sync::txn::{IState, TxnReadOnlyType, TxnVariant};
+use crate::txn::TxnBestEffortType as AsyncBestEffortTxn;
 use crate::{DgraphError, Query, Response, Result};
 use async_trait::async_trait;
 use std::collections::hash_map::RandomState;
@@ -44,13 +44,13 @@ impl<C: ILazyClient> IState for BestEffort<C> {
 ///
 /// Best effort variant of transaction
 ///
-pub type BestEffortTxn<C> = TxnVariant<BestEffort<C>>;
+pub type TxnBestEffortType<C> = TxnVariant<BestEffort<C>>;
 
-impl<C: ILazyClient> ReadOnlyTxn<C> {
+impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///
     /// Create best effort transaction from read only state
     ///
-    pub fn best_effort(self) -> BestEffortTxn<C> {
+    pub fn best_effort(self) -> TxnBestEffortType<C> {
         let rt = self.extra.rt;
         let txn = self
             .extra

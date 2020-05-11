@@ -4,7 +4,9 @@ use crate::client::lazy::{ILazyClient, LazyChannel};
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::{LazyDefaultChannel, Result, TxnType};
+use crate::{
+    LazyDefaultChannel, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+};
 use async_trait::async_trait;
 use failure::Error;
 use prost::Message;
@@ -111,15 +113,48 @@ pub type AclClient = AclClientType<LazyAclClient<LazyDefaultChannel>>;
 pub type AclTlsClient = AclClientType<LazyAclClient<LazyTlsChannel>>;
 
 ///
-/// Txn over http with AC:
+/// Txn over http with Acl
 ///
 pub type TxnAcl = TxnType<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Readonly txn over http with Acl
+///
+pub type TxnAclReadOnly = TxnReadOnlyType<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Best effort txn over http with Acl
+///
+pub type TxnAclBestEffort = TxnBestEffortType<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Mutated txn over http with Acl
+///
+pub type TxnAclMutated = TxnMutatedType<LazyAclClient<LazyDefaultChannel>>;
 
 ///
 /// Txn over http with AC:
 ///
 #[cfg(feature = "tls")]
 pub type TxnAclTls = TxnType<LazyAclClient<LazyTlsChannel>>;
+
+///
+/// Readonly txn over http with Acl
+///
+#[cfg(feature = "tls")]
+pub type TxnAclTlsReadOnly = TxnReadOnlyType<LazyAclClient<LazyTlsChannel>>;
+
+///
+/// Best effort txn over http with Acl
+///
+#[cfg(feature = "tls")]
+pub type TxnAclTlsBestEffort = TxnBestEffortType<LazyAclClient<LazyTlsChannel>>;
+
+///
+/// Mutated txn over http with Acl
+///
+#[cfg(feature = "tls")]
+pub type TxnAclTlsMutated = TxnMutatedType<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
     ///

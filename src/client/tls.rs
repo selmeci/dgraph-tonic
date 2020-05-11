@@ -1,6 +1,6 @@
 use crate::client::lazy::{LazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
-use crate::{Endpoints, Result, TxnType};
+use crate::{Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use async_trait::async_trait;
 use failure::Error;
 use http::Uri;
@@ -78,6 +78,21 @@ pub type TlsClient = ClientVariant<Tls>;
 /// Txn with tls
 ///
 pub type TxnTls = TxnType<LazyClient<LazyTlsChannel>>;
+
+///
+/// Readonly txn with tls
+///
+pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyTlsChannel>>;
+
+///
+/// Best effort txn with tls
+///
+pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyTlsChannel>>;
+
+///
+/// Mutated txn with tls
+///
+pub type TxnMutated = TxnMutatedType<LazyClient<LazyTlsChannel>>;
 
 impl TlsClient {
     ///

@@ -9,17 +9,22 @@ pub use crate::client::endpoints::Endpoints;
 use crate::errors::ClientError;
 use crate::stub::Stub;
 use crate::{
-    BestEffortTxn, IDgraphClient, MutatedTxn, Operation, Payload, ReadOnlyTxn, Result, TxnType,
+    IDgraphClient, Operation, Payload, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType,
+    TxnType,
 };
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
 use crate::api::Version;
 #[cfg(feature = "acl")]
-pub use crate::client::acl::{AclClient, AclClientType, TxnAcl};
+pub use crate::client::acl::{
+    AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
+};
 #[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::client::acl::{AclTlsClient, TxnAclTls};
-pub use crate::client::default::{Client, Txn};
+pub use crate::client::acl::{
+    AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
+};
+pub use crate::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
 pub(crate) use crate::client::lazy::ILazyClient;
 use crate::client::lazy::LazyChannel;
 #[cfg(feature = "tls")]
@@ -145,7 +150,7 @@ impl<C: IClient> ClientVariant<C> {
     /// Read-only transactions are useful to increase read speed because they can circumvent the
     /// usual consensus protocol.
     ///
-    pub fn new_read_only_txn(&self) -> ReadOnlyTxn<C::Client> {
+    pub fn new_read_only_txn(&self) -> TxnReadOnlyType<C::Client> {
         self.new_txn().read_only()
     }
 
@@ -157,14 +162,14 @@ impl<C: IClient> ClientVariant<C> {
     /// of outbound requests to Zero. This may yield improved latencies in read-bound workloads where
     /// linearizable reads are not strictly needed.
     ///
-    pub fn new_best_effort_txn(&self) -> BestEffortTxn<C::Client> {
+    pub fn new_best_effort_txn(&self) -> TxnBestEffortType<C::Client> {
         self.new_read_only_txn().best_effort()
     }
 
     ///
     /// Create new transaction which can do mutate, commit and discard operations
     ///
-    pub fn new_mutated_txn(&self) -> MutatedTxn<C::Client> {
+    pub fn new_mutated_txn(&self) -> TxnMutatedType<C::Client> {
         self.new_txn().mutated()
     }
 

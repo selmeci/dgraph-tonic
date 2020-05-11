@@ -76,13 +76,13 @@ impl<C: ILazyClient> IState for Mutated<C> {
 ///
 /// Transaction variant with mutations support.
 ///
-pub type MutatedTxn<C> = TxnVariant<Mutated<C>, C>;
+pub type TxnMutatedType<C> = TxnVariant<Mutated<C>, C>;
 
 impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new transaction for mutation operations.
     ///
-    pub fn mutated(self) -> MutatedTxn<C> {
+    pub fn mutated(self) -> TxnMutatedType<C> {
         TxnVariant {
             state: self.state,
             extra: Mutated {
@@ -460,7 +460,7 @@ pub trait Mutate: Query {
 }
 
 #[async_trait]
-impl<C: ILazyClient> Mutate for MutatedTxn<C> {
+impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     async fn discard(mut self) -> Result<(), DgraphError> {
         self.context.aborted = true;
         self.commit_or_abort().await
@@ -510,7 +510,7 @@ impl<C: ILazyClient> Mutate for MutatedTxn<C> {
     }
 }
 
-impl<C: ILazyClient> MutatedTxn<C> {
+impl<C: ILazyClient> TxnMutatedType<C> {
     #[cfg(feature = "dgraph-1-0")]
     async fn do_mutation<Q, K, V>(
         &mut self,

@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use crate::client::ILazyClient;
 use crate::txn::read_only::ReadOnly;
-use crate::txn::{IState, ReadOnlyTxn, TxnState, TxnVariant};
+use crate::txn::{IState, TxnReadOnlyType, TxnState, TxnVariant};
 use crate::Request;
 
 ///
@@ -34,13 +34,13 @@ impl<C: ILazyClient> IState for BestEffort<C> {
 ///
 /// Best effort variant of read only transaction
 ///
-pub type BestEffortTxn<C> = TxnVariant<BestEffort<C>, C>;
+pub type TxnBestEffortType<C> = TxnVariant<BestEffort<C>, C>;
 
-impl<C: ILazyClient> ReadOnlyTxn<C> {
+impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///
     /// Create best effort transaction from read only state
     ///
-    pub fn best_effort(self) -> BestEffortTxn<C> {
+    pub fn best_effort(self) -> TxnBestEffortType<C> {
         TxnVariant {
             state: self.state,
             extra: BestEffort {

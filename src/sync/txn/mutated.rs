@@ -12,7 +12,7 @@ use crate::sync::txn::{IState, Query, TxnType, TxnVariant};
 use crate::txn::mutated::Mutate as AsyncMutate;
 #[cfg(feature = "dgraph-1-1")]
 use crate::txn::mutated::UpsertMutation;
-use crate::txn::MutatedTxn as AsyncMutatedTxn;
+use crate::txn::TxnMutatedType as AsyncMutatedTxn;
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
 use crate::Query as AsyncQuery;
@@ -64,13 +64,13 @@ impl<C: ILazyClient> IState for Mutated<C> {
 ///
 /// Transaction variant with mutations support.
 ///
-pub type MutatedTxn<C> = TxnVariant<Mutated<C>>;
+pub type TxnMutatedType<C> = TxnVariant<Mutated<C>>;
 
 impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new transaction for mutation operations.
     ///
-    pub fn mutated(self) -> MutatedTxn<C> {
+    pub fn mutated(self) -> TxnMutatedType<C> {
         let rt = self.extra.rt;
         let txn = self
             .extra
@@ -466,7 +466,7 @@ pub trait Mutate: Query {
         M: Into<UpsertMutation> + Send + Sync;
 }
 
-impl<C: ILazyClient> Mutate for MutatedTxn<C> {
+impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     fn discard(self) -> Result<(), DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);

@@ -14,13 +14,19 @@ use tokio::runtime::Runtime;
 
 use crate::client::lazy::LazyChannel;
 #[cfg(feature = "acl")]
-pub use crate::sync::client::acl::{AclClient, AclClientType, TxnAcl};
+pub use crate::sync::client::acl::{
+    AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAlcReadOnly,
+};
 #[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::sync::client::acl::{AclTlsClient, TxnAclTls};
-pub use crate::sync::client::default::{Client, Txn};
+pub use crate::sync::client::acl::{
+    AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
+};
+pub use crate::sync::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
 #[cfg(feature = "tls")]
-pub use crate::sync::client::tls::{TlsClient, TxnTls};
-use crate::sync::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, TxnType};
+pub use crate::sync::client::tls::{
+    TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly,
+};
+use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use crate::txn::TxnType as AsyncTxn;
 
 #[cfg(feature = "acl")]
@@ -128,14 +134,14 @@ impl<C: IClient> ClientVariant<C> {
     /// Read-only transactions are useful to increase read speed because they can circumvent the
     /// usual consensus protocol.
     ///
-    pub fn new_read_only_txn(&self) -> ReadOnlyTxn<C::Client> {
+    pub fn new_read_only_txn(&self) -> TxnReadOnlyType<C::Client> {
         self.new_txn().read_only()
     }
 
     ///
     /// Create new transaction which can do mutate, commit and discard operations
     ///
-    pub fn new_mutated_txn(&self) -> MutatedTxn<C::Client> {
+    pub fn new_mutated_txn(&self) -> TxnMutatedType<C::Client> {
         self.new_txn().mutated()
     }
 
@@ -147,7 +153,7 @@ impl<C: IClient> ClientVariant<C> {
     /// of outbound requests to Zero. This may yield improved latencies in read-bound workloads where
     /// linearizable reads are not strictly needed.
     ///
-    pub fn new_best_effort_txn(&self) -> BestEffortTxn<C::Client> {
+    pub fn new_best_effort_txn(&self) -> TxnBestEffortType<C::Client> {
         self.new_read_only_txn().best_effort()
     }
 

@@ -7,10 +7,10 @@ use std::ops::{Deref, DerefMut};
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
 use crate::stub::Stub;
-pub use crate::txn::best_effort::BestEffortTxn;
+pub use crate::txn::best_effort::TxnBestEffortType;
 pub use crate::txn::default::TxnType;
-pub use crate::txn::mutated::{Mutate, MutatedTxn, MutationResponse};
-pub use crate::txn::read_only::ReadOnlyTxn;
+pub use crate::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
+pub use crate::txn::read_only::TxnReadOnlyType;
 use crate::IDgraphClient;
 use crate::{Request, Response, TxnContext};
 

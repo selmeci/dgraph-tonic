@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnType, TxnVariant};
-use crate::txn::ReadOnlyTxn as AsyncReadOnlyTxn;
+use crate::txn::TxnReadOnlyType as AsyncReadOnlyTxn;
 use crate::{DgraphError, Query, Response, Result};
 use async_trait::async_trait;
 use std::collections::hash_map::RandomState;
@@ -44,13 +44,13 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
 ///
 /// ReadOnly variant of transaction
 ///
-pub type ReadOnlyTxn<C> = TxnVariant<ReadOnly<C>>;
+pub type TxnReadOnlyType<C> = TxnVariant<ReadOnly<C>>;
 
 impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new read only transaction from default transaction state
     ///
-    pub fn read_only(self) -> ReadOnlyTxn<C> {
+    pub fn read_only(self) -> TxnReadOnlyType<C> {
         let rt = self.extra.rt;
         let txn = self
             .extra

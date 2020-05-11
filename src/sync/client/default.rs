@@ -3,7 +3,7 @@ use crate::client::lazy::LazyClient;
 use crate::client::AclClientType;
 use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyDefaultChannel};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
-use crate::sync::txn::TxnType as SyncTxn;
+use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
@@ -66,6 +66,21 @@ pub type Client = ClientVariant<Default>;
 /// Txn over http
 ///
 pub type Txn = SyncTxn<LazyClient<LazyDefaultChannel>>;
+
+///
+/// Readonly txn over http
+///
+pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyDefaultChannel>>;
+
+///
+/// Best effort txn over http
+///
+pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyDefaultChannel>>;
+
+///
+/// Mutated txn over http
+///
+pub type TxnMutated = TxnMutatedType<LazyClient<LazyDefaultChannel>>;
 
 impl Client {
     ///
