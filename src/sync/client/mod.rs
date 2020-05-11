@@ -13,11 +13,13 @@ use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
 use crate::client::lazy::LazyChannel;
+#[cfg(all(feature = "acl", feature = "tls"))]
+pub use crate::sync::client::acl::TlsAclTxn;
 #[cfg(feature = "acl")]
-pub use crate::sync::client::acl::AclClient;
-pub use crate::sync::client::default::Client;
+pub use crate::sync::client::acl::{AclClient, DefaultAclTxn};
+pub use crate::sync::client::default::{Client, DefaultTxn};
 #[cfg(feature = "tls")]
-pub use crate::sync::client::tls::TlsClient;
+pub use crate::sync::client::tls::{TlsClient, TlsTxn};
 use crate::sync::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
 use crate::txn::Txn as AsyncTxn;
 

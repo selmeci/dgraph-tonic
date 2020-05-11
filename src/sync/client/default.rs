@@ -3,6 +3,7 @@ use crate::client::lazy::LazyClient;
 use crate::client::AclClient;
 use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyDefaultChannel};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
+use crate::sync::txn::Txn as SyncTxn;
 use crate::txn::Txn;
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
@@ -60,6 +61,11 @@ impl IClient for Default {
 /// Default client.
 ///
 pub type Client = ClientVariant<Default>;
+
+///
+/// Txn over http
+///
+pub type DefaultTxn = SyncTxn<LazyClient<LazyDefaultChannel>>;
 
 impl Client {
     ///

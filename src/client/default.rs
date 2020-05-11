@@ -1,6 +1,6 @@
 use crate::client::lazy::{LazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
-use crate::{Endpoint, Endpoints, Result};
+use crate::{Endpoint, Endpoints, Result, Txn};
 use async_trait::async_trait;
 use failure::Error;
 use http::Uri;
@@ -64,6 +64,11 @@ impl IClient for Default {
 /// Default client.
 ///
 pub type Client = ClientVariant<Default>;
+
+///
+/// Txn over http
+///
+pub type DefaultTxn = Txn<LazyClient<LazyDefaultChannel>>;
 
 impl Client {
     ///

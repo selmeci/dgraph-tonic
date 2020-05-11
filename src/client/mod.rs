@@ -15,13 +15,15 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
 use crate::api::Version;
+#[cfg(all(feature = "acl", feature = "tls"))]
+pub use crate::client::acl::TlsAclTxn;
 #[cfg(feature = "acl")]
-pub use crate::client::acl::AclClient;
-pub use crate::client::default::Client;
+pub use crate::client::acl::{AclClient, DefaultAclTxn};
+pub use crate::client::default::{Client, DefaultTxn};
 pub(crate) use crate::client::lazy::ILazyClient;
 use crate::client::lazy::LazyChannel;
 #[cfg(feature = "tls")]
-pub use crate::client::tls::TlsClient;
+pub use crate::client::tls::{TlsClient, TlsTxn};
 
 #[cfg(feature = "acl")]
 pub(crate) mod acl;

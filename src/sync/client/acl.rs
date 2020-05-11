@@ -1,7 +1,10 @@
 use crate::client::acl::LazyAclClient;
 use crate::client::lazy::LazyChannel;
-use crate::client::{AclClient as AsyncAclClient, IClient as IAsyncClient};
+#[cfg(feature = "tls")]
+use crate::client::tls::LazyTlsChannel;
+use crate::client::{AclClient as AsyncAclClient, IClient as IAsyncClient, LazyDefaultChannel};
 use crate::sync::client::{ClientVariant, IClient};
+use crate::sync::txn::Txn as SyncTxn;
 use crate::txn::Txn;
 use crate::Result;
 use async_trait::async_trait;
@@ -55,6 +58,17 @@ impl<C: LazyChannel> IClient for Acl<C> {
 /// Logged client.
 ///
 pub type AclClient<C> = ClientVariant<Acl<C>>;
+
+///
+/// Txn over http with AC:
+///
+pub type DefaultAclTxn = SyncTxn<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Txn over http with AC:
+///
+#[cfg(feature = "tls")]
+pub type TlsAclTxn = SyncTxn<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
     ///

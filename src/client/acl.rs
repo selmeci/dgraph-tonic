@@ -1,8 +1,10 @@
 use crate::api::dgraph_client::DgraphClient;
 use crate::api::{IDgraphClient, Jwt, LoginRequest};
 use crate::client::lazy::{ILazyClient, LazyChannel};
+#[cfg(feature = "tls")]
+use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::Result;
+use crate::{LazyDefaultChannel, Result, Txn};
 use async_trait::async_trait;
 use failure::Error;
 use prost::Message;
@@ -96,6 +98,17 @@ impl<C: LazyChannel> IClient for Acl<C> {
 /// Logged client.
 ///
 pub type AclClient<C> = ClientVariant<Acl<C>>;
+
+///
+/// Txn over http with AC:
+///
+pub type DefaultAclTxn = Txn<LazyAclClient<LazyDefaultChannel>>;
+
+///
+/// Txn over http with AC:
+///
+#[cfg(feature = "tls")]
+pub type TlsAclTxn = Txn<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
     ///

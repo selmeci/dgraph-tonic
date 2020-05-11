@@ -2,6 +2,7 @@ use crate::client::lazy::LazyClient;
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{AclClient, IClient as IAsyncClient, TlsClient as AsyncTlsClient};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
+use crate::sync::txn::Txn as SyncTxn;
 use crate::txn::Txn;
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
@@ -59,6 +60,11 @@ impl IClient for Tls {
 /// Client with TLS authorization
 ///
 pub type TlsClient = ClientVariant<Tls>;
+
+///
+/// Txn with tls
+///
+pub type TlsTxn = SyncTxn<LazyClient<LazyTlsChannel>>;
 
 impl TlsClient {
     ///
