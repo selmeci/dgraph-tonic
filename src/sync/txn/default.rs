@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnState, TxnVariant};
-use crate::txn::Txn as AsyncTxn;
+use crate::txn::TxnType as AsyncTxn;
 use crate::{DgraphError, Query, Response, Result};
 use async_trait::async_trait;
 use std::collections::hash_map::RandomState;
@@ -44,13 +44,13 @@ impl<C: ILazyClient> IState for Base<C> {
 ///
 /// Default transaction state
 ///
-pub type Txn<C> = TxnVariant<Base<C>>;
+pub type TxnType<C> = TxnVariant<Base<C>>;
 
-impl<C: ILazyClient> Txn<C> {
+impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new default transaction which can do query operations.
     ///
-    pub fn new(rt: Arc<Mutex<Runtime>>, async_txn: AsyncTxn<C>) -> Txn<C> {
+    pub fn new(rt: Arc<Mutex<Runtime>>, async_txn: AsyncTxn<C>) -> TxnType<C> {
         Self {
             state: Box::new(TxnState {}),
             extra: Base {

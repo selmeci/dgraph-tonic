@@ -37,13 +37,13 @@ impl<C: ILazyClient> IState for Base<C> {
 ///
 /// Default transaction state
 ///
-pub type Txn<C> = TxnVariant<Base<C>, C>;
+pub type TxnType<C> = TxnVariant<Base<C>, C>;
 
-impl<C: ILazyClient> Txn<C> {
+impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new default transaction which can do query operations.
     ///
-    pub fn new(stub: Stub<C>) -> Txn<C> {
+    pub fn new(stub: Stub<C>) -> TxnType<C> {
         Self {
             state: Box::new(TxnState {
                 context: Default::default(),

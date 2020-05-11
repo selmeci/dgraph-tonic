@@ -8,16 +8,16 @@ pub use crate::api::{
     Check, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext, Version,
 };
 pub use crate::client::Endpoints;
-#[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::client::TlsAclTxn;
 #[cfg(feature = "acl")]
-pub use crate::client::{AclClient, DefaultAclTxn, LazyDefaultChannel};
-pub use crate::client::{Client, DefaultTxn};
+pub use crate::client::{AclClient, AclClientType, LazyDefaultChannel, TxnAcl};
+#[cfg(all(feature = "acl", feature = "tls"))]
+pub use crate::client::{AclTlsClient, TxnAclTls};
+pub use crate::client::{Client, Txn};
 #[cfg(feature = "tls")]
-pub use crate::client::{TlsClient, TlsTxn};
+pub use crate::client::{TlsClient, TxnTls};
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
-    BestEffortTxn, Mutate, MutatedTxn, MutationResponse, Query, ReadOnlyTxn, Txn, TxnState,
+    BestEffortTxn, Mutate, MutatedTxn, MutationResponse, Query, ReadOnlyTxn, TxnState, TxnType,
     TxnVariant,
 };
 

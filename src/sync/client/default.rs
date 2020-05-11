@@ -1,10 +1,10 @@
 use crate::client::lazy::LazyClient;
 #[cfg(feature = "acl")]
-use crate::client::AclClient;
+use crate::client::AclClientType;
 use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyDefaultChannel};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
-use crate::sync::txn::Txn as SyncTxn;
-use crate::txn::Txn;
+use crate::sync::txn::TxnType as SyncTxn;
+use crate::txn::TxnType;
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
 use failure::Error;
@@ -43,7 +43,7 @@ impl IClient for Default {
         self.async_client
     }
 
-    fn new_txn(&self) -> Txn<Self::Client> {
+    fn new_txn(&self) -> TxnType<Self::Client> {
         self.async_client_ref().new_txn()
     }
 
@@ -52,7 +52,7 @@ impl IClient for Default {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClient<Self::Channel>, Error> {
+    ) -> Result<AclClientType<Self::Channel>, Error> {
         self.async_client.login(user_id, password).await
     }
 }
@@ -65,7 +65,7 @@ pub type Client = ClientVariant<Default>;
 ///
 /// Txn over http
 ///
-pub type DefaultTxn = SyncTxn<LazyClient<LazyDefaultChannel>>;
+pub type Txn = SyncTxn<LazyClient<LazyDefaultChannel>>;
 
 impl Client {
     ///

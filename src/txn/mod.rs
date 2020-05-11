@@ -8,7 +8,7 @@ use crate::client::ILazyClient;
 use crate::errors::DgraphError;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::BestEffortTxn;
-pub use crate::txn::default::Txn;
+pub use crate::txn::default::TxnType;
 pub use crate::txn::mutated::{Mutate, MutatedTxn, MutationResponse};
 pub use crate::txn::read_only::ReadOnlyTxn;
 use crate::IDgraphClient;
@@ -102,7 +102,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -110,7 +110,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }    
@@ -167,7 +167,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClient, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -175,7 +175,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClient<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -269,7 +269,7 @@ mod tests {
 
     use crate::client::Client;
     #[cfg(feature = "acl")]
-    use crate::client::{AclClient, LazyDefaultChannel};
+    use crate::client::{AclClientType, LazyDefaultChannel};
     use crate::{Mutate, Mutation};
 
     #[cfg(not(feature = "acl"))]
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    async fn client() -> AclClient<LazyDefaultChannel> {
+    async fn client() -> AclClientType<LazyDefaultChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").await.unwrap()
     }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use crate::client::ILazyClient;
-use crate::sync::txn::{IState, Txn, TxnVariant};
+use crate::sync::txn::{IState, TxnType, TxnVariant};
 use crate::txn::ReadOnlyTxn as AsyncReadOnlyTxn;
 use crate::{DgraphError, Query, Response, Result};
 use async_trait::async_trait;
@@ -46,7 +46,7 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
 ///
 pub type ReadOnlyTxn<C> = TxnVariant<ReadOnly<C>>;
 
-impl<C: ILazyClient> Txn<C> {
+impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new read only transaction from default transaction state
     ///

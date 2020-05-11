@@ -1,9 +1,9 @@
 use crate::client::lazy::LazyClient;
 use crate::client::tls::LazyTlsChannel;
-use crate::client::{AclClient, IClient as IAsyncClient, TlsClient as AsyncTlsClient};
+use crate::client::{AclClientType, IClient as IAsyncClient, TlsClient as AsyncTlsClient};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
-use crate::sync::txn::Txn as SyncTxn;
-use crate::txn::Txn;
+use crate::sync::txn::TxnType as SyncTxn;
+use crate::txn::TxnType;
 use crate::{Endpoints, Result};
 use async_trait::async_trait;
 use failure::Error;
@@ -42,7 +42,7 @@ impl IClient for Tls {
         self.async_client
     }
 
-    fn new_txn(&self) -> Txn<Self::Client> {
+    fn new_txn(&self) -> TxnType<Self::Client> {
         self.async_client_ref().new_txn()
     }
 
@@ -51,7 +51,7 @@ impl IClient for Tls {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClient<Self::Channel>, Error> {
+    ) -> Result<AclClientType<Self::Channel>, Error> {
         self.async_client.login(user_id, password).await
     }
 }
@@ -64,7 +64,7 @@ pub type TlsClient = ClientVariant<Tls>;
 ///
 /// Txn with tls
 ///
-pub type TlsTxn = SyncTxn<LazyClient<LazyTlsChannel>>;
+pub type TxnTls = SyncTxn<LazyClient<LazyTlsChannel>>;
 
 impl TlsClient {
     ///

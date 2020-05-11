@@ -2,10 +2,10 @@ use crate::client::acl::LazyAclClient;
 use crate::client::lazy::LazyChannel;
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
-use crate::client::{AclClient as AsyncAclClient, IClient as IAsyncClient, LazyDefaultChannel};
+use crate::client::{AclClientType as AsyncAclClient, IClient as IAsyncClient, LazyDefaultChannel};
 use crate::sync::client::{ClientVariant, IClient};
-use crate::sync::txn::Txn as SyncTxn;
-use crate::txn::Txn;
+use crate::sync::txn::TxnType as SyncTxn;
+use crate::txn::TxnType;
 use crate::Result;
 use async_trait::async_trait;
 use failure::Error;
@@ -41,7 +41,7 @@ impl<C: LazyChannel> IClient for Acl<C> {
         self.async_client
     }
 
-    fn new_txn(&self) -> Txn<Self::Client> {
+    fn new_txn(&self) -> TxnType<Self::Client> {
         self.async_client_ref().new_txn()
     }
 
@@ -57,29 +57,29 @@ impl<C: LazyChannel> IClient for Acl<C> {
 ///
 /// Logged client.
 ///
-pub type AclClient<C> = ClientVariant<Acl<C>>;
+pub type AclClientType<C> = ClientVariant<Acl<C>>;
 
 ///
 /// Logged default client
 ///
-pub type AclDefaultClient = AclClient<LazyAclClient<LazyDefaultChannel>>;
+pub type AclClient = AclClientType<LazyAclClient<LazyDefaultChannel>>;
 
 ///
 /// Logged tls client
 ///
 #[cfg(feature = "tls")]
-pub type AclTlsClient = AclClient<LazyAclClient<LazyTlsChannel>>;
+pub type AclTlsClient = AclClientType<LazyAclClient<LazyTlsChannel>>;
 
 ///
 /// Txn over http with AC:
 ///
-pub type DefaultAclTxn = SyncTxn<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAcl = SyncTxn<LazyAclClient<LazyDefaultChannel>>;
 
 ///
 /// Txn over http with AC:
 ///
 #[cfg(feature = "tls")]
-pub type TlsAclTxn = SyncTxn<LazyAclClient<LazyTlsChannel>>;
+pub type TxnAclTls = SyncTxn<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
     ///
@@ -110,20 +110,20 @@ impl<S: IClient> ClientVariant<S> {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClient<S::Channel>, Error> {
+    ) -> Result<AclClientType<S::Channel>, Error> {
         let async_client = {
             let mut rt = self.state.rt.lock().expect("Tokio runtime");
             let client = self.extra;
             rt.block_on(async move { client.login(user_id, password).await })?
         };
-        Ok(AclClient {
+        Ok(AclClientType {
             state: self.state,
             extra: Acl { async_client },
         })
     }
 }
 
-impl<C: LazyChannel> AclClient<C> {
+impl<C: LazyChannel> AclClientType<C> {
     ///
     /// Try refresh actual login JWT tokens with new ones.
     ///

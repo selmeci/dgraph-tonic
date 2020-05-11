@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::client::ILazyClient;
 use crate::txn::default::Base;
-use crate::txn::{IState, Txn, TxnState, TxnVariant};
+use crate::txn::{IState, TxnState, TxnType, TxnVariant};
 use crate::Request;
 
 ///
@@ -35,7 +35,7 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
 ///
 pub type ReadOnlyTxn<C> = TxnVariant<ReadOnly<C>, C>;
 
-impl<C: ILazyClient> Txn<C> {
+impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new read only transaction from default transaction state
     ///

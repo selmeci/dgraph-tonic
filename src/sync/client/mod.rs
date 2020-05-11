@@ -1,6 +1,6 @@
 use crate::api::IDgraphClient;
 #[cfg(feature = "acl")]
-use crate::client::AclClient as AsyncAclClient;
+use crate::client::AclClientType as AsyncAclClient;
 use crate::client::ILazyClient;
 use crate::stub::Stub;
 use crate::{Operation, Payload, Version};
@@ -14,14 +14,14 @@ use tokio::runtime::Runtime;
 
 use crate::client::lazy::LazyChannel;
 #[cfg(feature = "acl")]
-pub use crate::sync::client::acl::{AclClient, AclDefaultClient, DefaultAclTxn};
+pub use crate::sync::client::acl::{AclClient, AclClientType, TxnAcl};
 #[cfg(all(feature = "acl", feature = "tls"))]
-pub use crate::sync::client::acl::{AclTlsClient, TlsAclTxn};
-pub use crate::sync::client::default::{Client, DefaultTxn};
+pub use crate::sync::client::acl::{AclTlsClient, TxnAclTls};
+pub use crate::sync::client::default::{Client, Txn};
 #[cfg(feature = "tls")]
-pub use crate::sync::client::tls::{TlsClient, TlsTxn};
-use crate::sync::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, Txn};
-use crate::txn::Txn as AsyncTxn;
+pub use crate::sync::client::tls::{TlsClient, TxnTls};
+use crate::sync::txn::{BestEffortTxn, MutatedTxn, ReadOnlyTxn, TxnType};
+use crate::txn::TxnType as AsyncTxn;
 
 #[cfg(feature = "acl")]
 mod acl;
@@ -116,10 +116,10 @@ impl<C: IClient> ClientVariant<C> {
     ///
     /// Return transaction in default state, which can be specialized into ReadOnly or Mutated
     ///
-    pub fn new_txn(&self) -> Txn<C::Client> {
+    pub fn new_txn(&self) -> TxnType<C::Client> {
         let rt = Arc::clone(&self.rt);
         let async_txn = self.extra.new_txn();
-        Txn::new(rt, async_txn)
+        TxnType::new(rt, async_txn)
     }
 
     ///
@@ -171,7 +171,7 @@ impl<C: IClient> ClientVariant<C> {
     /// use dgraph_tonic::Operation;
     /// use dgraph_tonic::sync::Client;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::sync::AclClient;
+    /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::LazyDefaultChannel;
     ///
@@ -181,7 +181,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClient<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }
@@ -223,7 +223,7 @@ impl<C: IClient> ClientVariant<C> {
     /// use dgraph_tonic::Operation;
     /// use dgraph_tonic::sync::Client;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::sync::AclClient;
+    /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::LazyDefaultChannel;
     ///
@@ -233,7 +233,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClient<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyDefaultChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }
@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    fn client() -> AclClient<LazyDefaultChannel> {
+    fn client() -> AclClientType<LazyDefaultChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").unwrap()
     }

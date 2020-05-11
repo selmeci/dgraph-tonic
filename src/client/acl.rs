@@ -4,7 +4,7 @@ use crate::client::lazy::{ILazyClient, LazyChannel};
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::{LazyDefaultChannel, Result, Txn};
+use crate::{LazyDefaultChannel, Result, TxnType};
 use async_trait::async_trait;
 use failure::Error;
 use prost::Message;
@@ -97,29 +97,29 @@ impl<C: LazyChannel> IClient for Acl<C> {
 ///
 /// Logged client.
 ///
-pub type AclClient<C> = ClientVariant<Acl<C>>;
+pub type AclClientType<C> = ClientVariant<Acl<C>>;
 
 ///
 /// Logged default client
 ///
-pub type AclDefaultClient = AclClient<LazyAclClient<LazyDefaultChannel>>;
+pub type AclClient = AclClientType<LazyAclClient<LazyDefaultChannel>>;
 
 ///
 /// Logged tls client
 ///
 #[cfg(feature = "tls")]
-pub type AclTlsClient = AclClient<LazyAclClient<LazyTlsChannel>>;
+pub type AclTlsClient = AclClientType<LazyAclClient<LazyTlsChannel>>;
 
 ///
 /// Txn over http with AC:
 ///
-pub type DefaultAclTxn = Txn<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAcl = TxnType<LazyAclClient<LazyDefaultChannel>>;
 
 ///
 /// Txn over http with AC:
 ///
 #[cfg(feature = "tls")]
-pub type TlsAclTxn = Txn<LazyAclClient<LazyTlsChannel>>;
+pub type TxnAclTls = TxnType<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
     ///
@@ -151,7 +151,7 @@ impl<S: IClient> ClientVariant<S> {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClient<S::Channel>, Error> {
+    ) -> Result<AclClientType<S::Channel>, Error> {
         let mut stub = self.any_stub();
         let login = LoginRequest {
             userid: user_id.into(),
@@ -170,7 +170,7 @@ impl<S: IClient> ClientVariant<S> {
                 LazyAclClient::new(channel, Arc::clone(&access_jwt))
             })
             .collect::<Vec<LazyAclClient<S::Channel>>>();
-        Ok(AclClient {
+        Ok(AclClientType {
             state: self.state,
             extra: Acl {
                 clients,
@@ -181,7 +181,7 @@ impl<S: IClient> ClientVariant<S> {
     }
 }
 
-impl<C: LazyChannel> AclClient<C> {
+impl<C: LazyChannel> AclClientType<C> {
     ///
     /// Try refresh actual login JWT tokens with new ones.
     ///
