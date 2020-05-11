@@ -1,12 +1,10 @@
 use crate::api::dgraph_client::DgraphClient;
 use crate::api::{IDgraphClient, Jwt, LoginRequest};
-use crate::client::lazy::{ILazyClient, LazyChannel};
+use crate::client::lazy::{ILazyChannel, ILazyClient};
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::{
-    LazyDefaultChannel, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
-};
+use crate::{LazyChannel, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use async_trait::async_trait;
 use failure::Error;
 use prost::Message;
@@ -20,13 +18,13 @@ use tonic::Request;
 /// Acl gRPC lazy Dgraph client
 ///
 #[derive(Clone, Debug)]
-pub struct LazyAclClient<C: LazyChannel> {
+pub struct LazyAclClient<C: ILazyChannel> {
     channel: C,
     access_jwt: Arc<Mutex<String>>,
     client: Option<DgraphClient<Channel>>,
 }
 
-impl<C: LazyChannel> LazyAclClient<C> {
+impl<C: ILazyChannel> LazyAclClient<C> {
     pub fn new(channel: C, access_jwt: Arc<Mutex<String>>) -> Self {
         Self {
             channel,
@@ -54,7 +52,7 @@ impl<C: LazyChannel> LazyAclClient<C> {
 }
 
 #[async_trait]
-impl<C: LazyChannel> ILazyClient for LazyAclClient<C> {
+impl<C: ILazyChannel> ILazyClient for LazyAclClient<C> {
     type Channel = C;
 
     async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, Error> {
@@ -76,14 +74,14 @@ impl<C: LazyChannel> ILazyClient for LazyAclClient<C> {
 ///
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct Acl<C: LazyChannel> {
+pub struct Acl<C: ILazyChannel> {
     access_jwt: Arc<Mutex<String>>,
     refresh_jwt: Mutex<String>,
     clients: Vec<LazyAclClient<C>>,
 }
 
 #[async_trait]
-impl<C: LazyChannel> IClient for Acl<C> {
+impl<C: ILazyChannel> IClient for Acl<C> {
     type Client = LazyAclClient<Self::Channel>;
     type Channel = C;
 
@@ -104,7 +102,7 @@ pub type AclClientType<C> = ClientVariant<Acl<C>>;
 ///
 /// Logged default client
 ///
-pub type AclClient = AclClientType<LazyAclClient<LazyDefaultChannel>>;
+pub type AclClient = AclClientType<LazyAclClient<LazyChannel>>;
 
 ///
 /// Logged tls client
@@ -115,22 +113,22 @@ pub type AclTlsClient = AclClientType<LazyAclClient<LazyTlsChannel>>;
 ///
 /// Txn over http with Acl
 ///
-pub type TxnAcl = TxnType<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAcl = TxnType<LazyAclClient<LazyChannel>>;
 
 ///
 /// Readonly txn over http with Acl
 ///
-pub type TxnAclReadOnly = TxnReadOnlyType<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAclReadOnly = TxnReadOnlyType<LazyAclClient<LazyChannel>>;
 
 ///
 /// Best effort txn over http with Acl
 ///
-pub type TxnAclBestEffort = TxnBestEffortType<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAclBestEffort = TxnBestEffortType<LazyAclClient<LazyChannel>>;
 
 ///
 /// Mutated txn over http with Acl
 ///
-pub type TxnAclMutated = TxnMutatedType<LazyAclClient<LazyDefaultChannel>>;
+pub type TxnAclMutated = TxnMutatedType<LazyAclClient<LazyChannel>>;
 
 ///
 /// Txn over http with AC:
@@ -216,7 +214,7 @@ impl<S: IClient> ClientVariant<S> {
     }
 }
 
-impl<C: LazyChannel> AclClientType<C> {
+impl<C: ILazyChannel> AclClientType<C> {
     ///
     /// Try refresh actual login JWT tokens with new ones.
     ///

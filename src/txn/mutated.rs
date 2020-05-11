@@ -134,7 +134,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::{Client, Mutation, Mutate};
     /// use serde::Serialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -142,7 +142,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -193,7 +193,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::{Client, Mutation, Mutate};
     /// use serde::Serialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -201,7 +201,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -252,7 +252,7 @@ pub trait Mutate: Query {
     /// ```
     /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -260,7 +260,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -292,7 +292,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -300,7 +300,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -361,7 +361,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -369,7 +369,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -403,7 +403,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::{Client, Mutation, Operation, Mutate};
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -411,7 +411,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     

@@ -12,7 +12,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
-use crate::client::lazy::LazyChannel;
+use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "acl")]
 pub use crate::sync::client::acl::{
     AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAlcReadOnly,
@@ -69,7 +69,7 @@ impl Default for ClientState {
 pub trait IClient {
     type AsyncClient;
     type Client: ILazyClient<Channel = Self::Channel>;
-    type Channel: LazyChannel;
+    type Channel: ILazyChannel;
 
     fn client(&self) -> Self::Client;
 
@@ -179,7 +179,7 @@ impl<C: IClient> ClientVariant<C> {
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -187,7 +187,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }
@@ -231,7 +231,7 @@ impl<C: IClient> ClientVariant<C> {
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -239,7 +239,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }
@@ -292,7 +292,7 @@ mod tests {
 
     use super::*;
     #[cfg(feature = "acl")]
-    use crate::client::LazyDefaultChannel;
+    use crate::client::LazyChannel;
 
     #[cfg(not(feature = "acl"))]
     fn client() -> Client {
@@ -300,7 +300,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    fn client() -> AclClientType<LazyDefaultChannel> {
+    fn client() -> AclClientType<LazyChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").unwrap()
     }

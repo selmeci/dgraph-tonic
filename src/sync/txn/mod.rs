@@ -86,7 +86,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::sync::AclClientType;
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -94,7 +94,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }    
@@ -153,7 +153,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::sync::AclClientType;
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -161,7 +161,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -234,7 +234,7 @@ mod tests {
     use serde_derive::{Deserialize, Serialize};
 
     #[cfg(feature = "acl")]
-    use crate::client::LazyDefaultChannel;
+    use crate::client::LazyChannel;
     #[cfg(feature = "acl")]
     use crate::sync::client::AclClientType;
     use crate::sync::client::Client;
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    fn client() -> AclClientType<LazyDefaultChannel> {
+    fn client() -> AclClientType<LazyChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").unwrap()
     }

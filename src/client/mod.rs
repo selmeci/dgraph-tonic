@@ -4,7 +4,7 @@ use failure::Error;
 use http::Uri;
 use rand::Rng;
 
-pub use crate::client::default::LazyDefaultChannel;
+pub use crate::client::default::LazyChannel;
 pub use crate::client::endpoints::Endpoints;
 use crate::errors::ClientError;
 use crate::stub::Stub;
@@ -25,10 +25,10 @@ pub use crate::client::acl::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
 pub use crate::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
+use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
-use crate::client::lazy::LazyChannel;
 #[cfg(feature = "tls")]
-pub use crate::client::tls::{TlsClient, TxnTls};
+pub use crate::client::tls::{TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
 
 #[cfg(feature = "acl")]
 pub(crate) mod acl;
@@ -79,7 +79,7 @@ pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
 ///
 pub trait IClient: Debug + Send + Sync {
     type Client: ILazyClient<Channel = Self::Channel>;
-    type Channel: LazyChannel;
+    type Channel: ILazyChannel;
     ///
     /// Return lazy Dgraph gRPC client
     ///
@@ -192,7 +192,7 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     /// use dgraph_tonic::{Client, Operation};
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -200,7 +200,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }
@@ -241,7 +241,7 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     /// use dgraph_tonic::{Client, Operation};
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -249,7 +249,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }
@@ -302,7 +302,7 @@ mod tests {
 
     use super::*;
     #[cfg(feature = "acl")]
-    use crate::client::{Client, LazyDefaultChannel};
+    use crate::client::{Client, LazyChannel};
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {
@@ -310,7 +310,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    async fn client() -> AclClientType<LazyDefaultChannel> {
+    async fn client() -> AclClientType<LazyChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").await.unwrap()
     }

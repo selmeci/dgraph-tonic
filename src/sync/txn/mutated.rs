@@ -132,7 +132,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::sync::AclClientType;
     /// use serde::Serialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -140,7 +140,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -194,7 +194,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::sync::AclClientType;
     /// use serde::Serialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -202,7 +202,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -254,7 +254,7 @@ pub trait Mutate: Query {
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -262,7 +262,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -296,7 +296,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::sync::AclClientType;
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -304,7 +304,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -367,7 +367,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::sync::AclClientType;
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -375,7 +375,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     
@@ -411,7 +411,7 @@ pub trait Mutate: Query {
     /// use dgraph_tonic::sync::AclClientType;
     /// use std::collections::HashMap;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::LazyDefaultChannel;
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
     /// fn client() -> Client {
@@ -419,7 +419,7 @@ pub trait Mutate: Query {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// fn client() -> AclClientType<LazyDefaultChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }     

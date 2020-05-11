@@ -1,7 +1,7 @@
 use crate::client::lazy::LazyClient;
 #[cfg(feature = "acl")]
 use crate::client::AclClientType;
-use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyDefaultChannel};
+use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyChannel};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
@@ -25,7 +25,7 @@ impl IClient for Default {
     type AsyncClient = AsyncClient;
 
     type Client = LazyClient<Self::Channel>;
-    type Channel = LazyDefaultChannel;
+    type Channel = LazyChannel;
 
     fn client(&self) -> Self::Client {
         self.async_client.extra.client()
@@ -65,22 +65,22 @@ pub type Client = ClientVariant<Default>;
 ///
 /// Txn over http
 ///
-pub type Txn = SyncTxn<LazyClient<LazyDefaultChannel>>;
+pub type Txn = SyncTxn<LazyClient<LazyChannel>>;
 
 ///
 /// Readonly txn over http
 ///
-pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyDefaultChannel>>;
+pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyChannel>>;
 
 ///
 /// Best effort txn over http
 ///
-pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyDefaultChannel>>;
+pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyChannel>>;
 
 ///
 /// Mutated txn over http
 ///
-pub type TxnMutated = TxnMutatedType<LazyClient<LazyDefaultChannel>>;
+pub type TxnMutated = TxnMutatedType<LazyClient<LazyChannel>>;
 
 impl Client {
     ///

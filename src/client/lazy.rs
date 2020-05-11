@@ -9,7 +9,7 @@ use tonic::transport::Channel;
 /// gRPC channel is connected only on client request
 ///
 #[async_trait]
-pub trait LazyChannel: Sync + Send + Debug + Clone {
+pub trait ILazyChannel: Sync + Send + Debug + Clone {
     ///
     /// Try create and connect gRPC channel
     ///
@@ -21,7 +21,7 @@ pub trait LazyChannel: Sync + Send + Debug + Clone {
 ///
 #[async_trait]
 pub trait ILazyClient: Sync + Send + Debug + Clone {
-    type Channel: LazyChannel;
+    type Channel: ILazyChannel;
 
     ///
     /// initialize gRPC client on first use
@@ -39,12 +39,12 @@ pub trait ILazyClient: Sync + Send + Debug + Clone {
 ///
 #[derive(Clone, Debug)]
 #[doc(hidden)]
-pub struct LazyClient<C: LazyChannel> {
+pub struct LazyClient<C: ILazyChannel> {
     channel: C,
     client: Option<DgraphClient<Channel>>,
 }
 
-impl<C: LazyChannel> LazyClient<C> {
+impl<C: ILazyChannel> LazyClient<C> {
     pub fn new(channel: C) -> Self {
         Self {
             channel,
@@ -62,7 +62,7 @@ impl<C: LazyChannel> LazyClient<C> {
 }
 
 #[async_trait]
-impl<C: LazyChannel> ILazyClient for LazyClient<C> {
+impl<C: ILazyChannel> ILazyClient for LazyClient<C> {
     type Channel = C;
 
     async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, Error> {

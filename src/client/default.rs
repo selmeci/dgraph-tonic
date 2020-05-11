@@ -1,4 +1,4 @@
-use crate::client::lazy::{LazyChannel, LazyClient};
+use crate::client::lazy::{ILazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
 use crate::{
     Endpoint, Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
@@ -13,20 +13,19 @@ use tonic::transport::Channel;
 /// Lazy initialization of gRPC channel
 ///
 #[derive(Clone, Debug)]
-#[doc(hidden)]
-pub struct LazyDefaultChannel {
+pub struct LazyChannel {
     uri: Uri,
     channel: Option<Channel>,
 }
 
-impl LazyDefaultChannel {
+impl LazyChannel {
     fn new(uri: Uri) -> Self {
         Self { uri, channel: None }
     }
 }
 
 #[async_trait]
-impl LazyChannel for LazyDefaultChannel {
+impl ILazyChannel for LazyChannel {
     async fn channel(&mut self) -> Result<Channel, Error> {
         if let Some(channel) = &self.channel {
             Ok(channel.to_owned())
@@ -45,13 +44,13 @@ impl LazyChannel for LazyDefaultChannel {
 #[derive(Debug)]
 #[doc(hidden)]
 pub struct Default {
-    clients: Vec<LazyClient<LazyDefaultChannel>>,
+    clients: Vec<LazyClient<LazyChannel>>,
 }
 
 #[async_trait]
 impl IClient for Default {
     type Client = LazyClient<Self::Channel>;
-    type Channel = LazyDefaultChannel;
+    type Channel = LazyChannel;
 
     fn client(&self) -> Self::Client {
         rnd_item(&self.clients)
@@ -70,22 +69,22 @@ pub type Client = ClientVariant<Default>;
 ///
 /// Txn over http
 ///
-pub type Txn = TxnType<LazyClient<LazyDefaultChannel>>;
+pub type Txn = TxnType<LazyClient<LazyChannel>>;
 
 ///
 /// Readonly txn over http
 ///
-pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyDefaultChannel>>;
+pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyChannel>>;
 
 ///
 /// Best effort txn over http
 ///
-pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyDefaultChannel>>;
+pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyChannel>>;
 
 ///
 /// Mutated txn over http
 ///
-pub type TxnMutated = TxnMutatedType<LazyClient<LazyDefaultChannel>>;
+pub type TxnMutated = TxnMutatedType<LazyClient<LazyChannel>>;
 
 impl Client {
     ///
@@ -117,7 +116,7 @@ impl Client {
         let extra = Default {
             clients: balance_list(endpoints)?
                 .into_iter()
-                .map(|uri| LazyClient::new(LazyDefaultChannel::new(uri)))
+                .map(|uri| LazyClient::new(LazyChannel::new(uri)))
                 .collect(),
         };
         let state = Box::new(ClientState::new());

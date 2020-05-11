@@ -1,4 +1,4 @@
-use crate::client::lazy::{LazyChannel, LazyClient};
+use crate::client::lazy::{ILazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
 use crate::{Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use async_trait::async_trait;
@@ -30,7 +30,7 @@ impl LazyTlsChannel {
 }
 
 #[async_trait]
-impl LazyChannel for LazyTlsChannel {
+impl ILazyChannel for LazyTlsChannel {
     async fn channel(&mut self) -> Result<Channel, Error> {
         if let Some(channel) = &self.channel {
             Ok(channel.to_owned())
@@ -82,17 +82,17 @@ pub type TxnTls = TxnType<LazyClient<LazyTlsChannel>>;
 ///
 /// Readonly txn with tls
 ///
-pub type TxnReadOnly = TxnReadOnlyType<LazyClient<LazyTlsChannel>>;
+pub type TxnTlsReadOnly = TxnReadOnlyType<LazyClient<LazyTlsChannel>>;
 
 ///
 /// Best effort txn with tls
 ///
-pub type TxnBestEffort = TxnBestEffortType<LazyClient<LazyTlsChannel>>;
+pub type TxnTlsBestEffort = TxnBestEffortType<LazyClient<LazyTlsChannel>>;
 
 ///
 /// Mutated txn with tls
 ///
-pub type TxnMutated = TxnMutatedType<LazyClient<LazyTlsChannel>>;
+pub type TxnTlsMutated = TxnMutatedType<LazyClient<LazyTlsChannel>>;
 
 impl TlsClient {
     ///

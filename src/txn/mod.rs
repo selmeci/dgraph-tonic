@@ -102,7 +102,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -110,7 +110,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }    
@@ -167,7 +167,7 @@ pub trait Query: Send + Sync {
     /// use dgraph_tonic::{Client, Response, Query};
     /// use serde::Deserialize;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyDefaultChannel};
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
     ///
     /// #[cfg(not(feature = "acl"))]
     /// async fn client() -> Client {
@@ -175,7 +175,7 @@ pub trait Query: Send + Sync {
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyDefaultChannel> {
+    /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
     /// }     
@@ -269,7 +269,7 @@ mod tests {
 
     use crate::client::Client;
     #[cfg(feature = "acl")]
-    use crate::client::{AclClientType, LazyDefaultChannel};
+    use crate::client::{AclClientType, LazyChannel};
     use crate::{Mutate, Mutation};
 
     #[cfg(not(feature = "acl"))]
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[cfg(feature = "acl")]
-    async fn client() -> AclClientType<LazyDefaultChannel> {
+    async fn client() -> AclClientType<LazyChannel> {
         let default = Client::new("http://127.0.0.1:19080").unwrap();
         default.login("groot", "password").await.unwrap()
     }
