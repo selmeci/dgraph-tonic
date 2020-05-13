@@ -434,9 +434,73 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn mutated_txn_query() {
+        let client = client().await;
+        let mut txn = client.new_mutated_txn();
+        let query = r#"{
+            uids(func: eq(name, "Alice")) {
+                uid
+            }
+        }"#;
+        let response = txn.query(query).await;
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[tokio::test]
+    async fn best_effort_txn_query() {
+        let client = client().await;
+        let mut txn = client.new_best_effort_txn();
+        let query = r#"{
+            uids(func: eq(name, "Alice")) {
+                uid
+            }
+        }"#;
+        let response = txn.query(query).await;
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[tokio::test]
     async fn query_with_vars() {
         let client = client().await;
         let mut txn = client.new_read_only_txn();
+        let query = r#"query all($a: string) {
+            uids(func: eq(name, $a)) {
+              uid
+            }
+          }"#;
+        let mut vars = HashMap::new();
+        vars.insert("$a", "Alice");
+        let response = txn.query_with_vars(query, vars).await;
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[tokio::test]
+    async fn mutated_txn_query_with_vars() {
+        let client = client().await;
+        let mut txn = client.new_mutated_txn();
+        let query = r#"query all($a: string) {
+            uids(func: eq(name, $a)) {
+              uid
+            }
+          }"#;
+        let mut vars = HashMap::new();
+        vars.insert("$a", "Alice");
+        let response = txn.query_with_vars(query, vars).await;
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[tokio::test]
+    async fn best_effort_txn_query_with_vars() {
+        let client = client().await;
+        let mut txn = client.new_best_effort_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
               uid
