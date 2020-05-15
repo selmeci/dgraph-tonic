@@ -113,7 +113,7 @@ pub trait Query: Send + Sync {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }    
+    /// }
     ///
     /// #[derive(Deserialize, Debug)]
     /// struct Person {
@@ -178,7 +178,7 @@ pub trait Query: Send + Sync {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     /// #[derive(Deserialize, Debug)]
     /// struct Person {
@@ -208,7 +208,7 @@ pub trait Query: Send + Sync {
     ///     let resp: Response = txn.query_with_vars(q, vars).await.expect("query response");
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
-    /// ```    
+    /// ```
     async fn query_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -373,8 +373,46 @@ mod tests {
           }"#;
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-        let txn = client.new_mutated_txn();
+        let mut txn = client.new_mutated_txn();
         let response = txn.upsert(query, mu).await;
+        assert!(response.is_ok())
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    #[tokio::test]
+    async fn upsert_and_commit_now() {
+        let client = client().await;
+        let mut txn = client.new_mutated_txn();
+        //first mutation
+        let p = Person {
+            uid: "_:alice".to_string(),
+            name: "Alice".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
+        assert!(response.is_ok());
+        //second mutation
+        let p = Person {
+            uid: "_:mike".to_string(),
+            name: "Mike".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
+        assert!(response.is_ok());
+        //commit
+        let commit = txn.commit().await;
+        assert!(commit.is_ok());
+        //upser all alices with email
+        let query = r#"
+          query {
+              user as var(func: eq(name, "Alice"))
+          }"#;
+        let mut mu = Mutation::new();
+        mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+        let mut txn = client.new_mutated_txn();
+        let response = txn.upsert_and_commit_now(query, mu).await;
         assert!(response.is_ok())
     }
 
@@ -413,8 +451,48 @@ mod tests {
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
-        let txn = client.new_mutated_txn();
+        let mut txn = client.new_mutated_txn();
         let response = txn.upsert_with_vars(query, vars, vec![mu]).await;
+        assert!(response.is_ok())
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    #[tokio::test]
+    async fn upsert_with_vars_and_commit_now() {
+        let client = client().await;
+        let mut txn = client.new_mutated_txn();
+        //first mutation
+        let p = Person {
+            uid: "_:alice".to_string(),
+            name: "Alice".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
+        assert!(response.is_ok());
+        //second mutation
+        let p = Person {
+            uid: "_:mike".to_string(),
+            name: "Mike".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate(mu).await;
+        assert!(response.is_ok());
+        //commit
+        let commit = txn.commit().await;
+        assert!(commit.is_ok());
+        //upser all alices with email
+        let query = r#"
+          query alices($a: string) {
+              user as var(func: eq(name, $a))
+          }"#;
+        let mut mu = Mutation::new();
+        mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
+        let mut vars = HashMap::new();
+        vars.insert("$a", "Alice");
+        let mut txn = client.new_mutated_txn();
+        let response = txn.upsert_with_vars_and_commit_now(query, vars, vec![mu]).await;
         assert!(response.is_ok())
     }
 
