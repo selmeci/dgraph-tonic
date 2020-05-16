@@ -568,7 +568,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
-            let mut async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            let mut async_txn = async_txn.lock().expect("MutatedTxn");
             async_txn.upsert(query, mu).await
         })
     }
@@ -603,7 +603,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
-            let mut async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            let mut async_txn = async_txn.lock().expect("MutatedTxn");
             async_txn.upsert_with_vars(query, vars, mu).await
         })
     }
