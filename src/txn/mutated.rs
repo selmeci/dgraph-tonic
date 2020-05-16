@@ -145,7 +145,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     ///#[derive(Serialize)]
     /// struct Person {
@@ -153,7 +153,7 @@ pub trait Mutate: Query {
     ///   name: String,
     /// }
     /// #[tokio::main]
-    /// async fn main() {   
+    /// async fn main() {
     ///    let p = Person {
     ///        uid:  "_:alice".into(),
     ///        name: "Alice".into(),
@@ -165,7 +165,7 @@ pub trait Mutate: Query {
     ///    let client = client().await;
     ///    let mut txn = client.new_mutated_txn();
     ///    let result = txn.mutate(mu).await.expect("failed to create data");
-    ///    txn.commit().await.expect("Txn is not commited");
+    ///    txn.commit().await.expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -204,7 +204,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     ///#[derive(Serialize)]
     /// struct Person {
@@ -233,7 +233,6 @@ pub trait Mutate: Query {
 
     ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
-    /// Transaction is commited.
     ///
     ///
     /// # Arguments
@@ -263,7 +262,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -280,10 +279,11 @@ pub trait Mutate: Query {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
+    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, mu).await.expect("failed to upsert data");
+    ///     txn.commit().await.expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -303,7 +303,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -318,7 +318,7 @@ pub trait Mutate: Query {
     ///
     ///     let mut mu_2 = Mutation::new();
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");
     ///
     ///     let client = client().await;
     ///     let op = Operation {
@@ -326,14 +326,41 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    ///     txn.commit().await.expect("Txn is not committed");
     /// }
-    /// ```      
+    /// ```
     ///
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+
+    ///
+    /// This function allows you to run upserts consisting of one query and one or more mutations.
+    ///
+    /// Transaction is committed.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_and_commit_now<Q, M>(
+        mut self,
+        query: Q,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
@@ -372,7 +399,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -392,9 +419,10 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).await.expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, mu).await.expect("failed to upsert data");
+    ///     txn.commit().await.expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -414,7 +442,7 @@ pub trait Mutate: Query {
     /// async fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").await.expect("Acl client")
-    /// }     
+    /// }
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -431,22 +459,54 @@ pub trait Mutate: Query {
     ///
     ///     let mut mu_2 = Mutation::new();
     ///     mu_2.set_set_nquads(r#"uid(user) <email> "another_email@dgraph.io" ."#);
-    ///     mu_2.set_cond("@if(eq(len(user), 2))");    
+    ///     mu_2.set_cond("@if(eq(len(user), 2))");
     ///
     ///     let client = client().await;
     ///     let op = Operation {
     ///         schema: "email: string @index(exact) .".into(),
     ///         ..Default::default()
     ///     };
-    ///     client.alter(op).await.expect("Schema is not updated");    
-    ///     let txn = client.new_mutated_txn();
+    ///     client.alter(op).await.expect("Schema is not updated");
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).await.expect("failed to upsert data");
+    ///     txn.commit().await.expect("Txn is not committed");
     /// }
-    /// ```    
+    /// ```
     ///
     #[cfg(feature = "dgraph-1-1")]
     async fn upsert_with_vars<Q, K, V, M>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync;
+
+    ///
+    /// This function allows you to run upserts with query variables consisting of one query and one
+    /// ore more mutations.
+    ///
+    /// Transaction is committed.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    /// * `vars`: query variables
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_with_vars_and_commit_now<Q, K, V, M>(
         mut self,
         query: Q,
         vars: HashMap<K, V>,
@@ -484,7 +544,26 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        self.do_mutation(
+            query,
+            HashMap::<String, String>::with_capacity(0),
+            mu,
+            false,
+        )
+        .await
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_and_commit_now<Q, M>(
+        mut self,
+        query: Q,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
@@ -495,6 +574,22 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
 
     #[cfg(feature = "dgraph-1-1")]
     async fn upsert_with_vars<Q, K, V, M>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+        mu: M,
+    ) -> Result<MutationResponse, DgraphError>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+        M: Into<UpsertMutation> + Send + Sync,
+    {
+        self.do_mutation(query, vars, mu, false).await
+    }
+
+    #[cfg(feature = "dgraph-1-1")]
+    async fn upsert_with_vars_and_commit_now<Q, K, V, M>(
         mut self,
         query: Q,
         vars: HashMap<K, V>,
