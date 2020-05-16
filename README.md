@@ -492,6 +492,12 @@ cargo test --no-default-features --features dgraph-1-1 -- --test-threads=1
 
 Contributions are welcome. Feel free to raise an issue, for feature requests, bug fixes and improvements.
 
+Run these commands, before you create pull request:
+```shell script
+rustup component add rustfmt
+cargo fmt
+```
+
 ## Release checklist
 
 These have to be done with both Dgraph 1.0 and Dgraph 1.1+:
