@@ -343,8 +343,8 @@ mod tests {
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let mut txn = client.new_mutated_txn();
-        let response = txn.upsert(query, mu);
-        assert!(response.is_ok())
+        assert!(txn.upsert(query, mu).is_ok());
+        assert!(txn.commit().is_ok());
     }
 
     #[test]
@@ -421,8 +421,8 @@ mod tests {
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
         let mut txn = client.new_mutated_txn();
-        let response = txn.upsert_with_vars(query, vars, vec![mu]);
-        assert!(response.is_ok())
+        assert!(txn.upsert_with_vars(query, vars, vec![mu]).is_ok());
+        assert!(txn.commit().is_ok());
     }
 
     #[test]

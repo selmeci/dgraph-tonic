@@ -374,8 +374,8 @@ mod tests {
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let mut txn = client.new_mutated_txn();
-        let response = txn.upsert(query, mu).await;
-        assert!(response.is_ok())
+        assert!(txn.upsert(query, mu).await.is_ok());
+        assert!(txn.commit().await.is_ok());
     }
 
     #[cfg(feature = "dgraph-1-1")]
@@ -411,7 +411,7 @@ mod tests {
           }"#;
         let mut mu = Mutation::new();
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
-        let mut txn = client.new_mutated_txn();
+        let txn = client.new_mutated_txn();
         let response = txn.upsert_and_commit_now(query, mu).await;
         assert!(response.is_ok())
     }
@@ -452,8 +452,8 @@ mod tests {
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
         let mut txn = client.new_mutated_txn();
-        let response = txn.upsert_with_vars(query, vars, vec![mu]).await;
-        assert!(response.is_ok())
+        assert!(txn.upsert_with_vars(query, vars, vec![mu]).await.is_ok());
+        assert!(txn.commit().await.is_ok());
     }
 
     #[cfg(feature = "dgraph-1-1")]
@@ -491,8 +491,10 @@ mod tests {
         mu.set_set_nquads(r#"uid(user) <email> "correct_email@dgraph.io" ."#);
         let mut vars = HashMap::new();
         vars.insert("$a", "Alice");
-        let mut txn = client.new_mutated_txn();
-        let response = txn.upsert_with_vars_and_commit_now(query, vars, vec![mu]).await;
+        let txn = client.new_mutated_txn();
+        let response = txn
+            .upsert_with_vars_and_commit_now(query, vars, vec![mu])
+            .await;
         assert!(response.is_ok())
     }
 
@@ -524,6 +526,7 @@ mod tests {
         assert!(response.is_ok());
         let mut json: UidJson = response.unwrap().try_into().unwrap();
         assert!(json.uids.pop().is_some());
+        assert!(txn.discard().await.is_ok());
     }
 
     #[tokio::test]
@@ -573,6 +576,7 @@ mod tests {
         assert!(response.is_ok());
         let mut json: UidJson = response.unwrap().try_into().unwrap();
         assert!(json.uids.pop().is_some());
+        assert!(txn.discard().await.is_ok());
     }
 
     #[tokio::test]

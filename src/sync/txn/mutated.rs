@@ -163,7 +163,7 @@ pub trait Mutate: Query {
     ///    let client = client();
     ///    let mut txn = client.new_mutated_txn();
     ///    let result = txn.mutate(mu).expect("failed to create data");
-    ///    txn.commit().expect("Txn is not commited");
+    ///    txn.commit().expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -232,7 +232,6 @@ pub trait Mutate: Query {
 
     ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
-    /// Transaction is commited.
     ///
     ///
     /// # Arguments
@@ -282,9 +281,10 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, mu).expect("failed to upsert data");
+    ///     txn.commit().expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -329,9 +329,10 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert(q, vec![mu_1, mu_2]).expect("failed to upsert data");
+    ///     txn.commit().expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -341,6 +342,22 @@ pub trait Mutate: Query {
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
 
+    ///
+    /// This function allows you to run upserts consisting of one query and one or more mutations.
+    ///
+    /// Transaction is committed.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
     #[cfg(feature = "dgraph-1-1")]
     fn upsert_and_commit_now<Q, M>(self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
     where
@@ -403,9 +420,10 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, mu).expect("failed to upsert data");
+    ///     txn.commit().expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -452,9 +470,10 @@ pub trait Mutate: Query {
     ///         ..Default::default()
     ///     };
     ///     client.alter(op).expect("Schema is not updated");
-    ///     let txn = client.new_mutated_txn();
+    ///     let mut txn = client.new_mutated_txn();
     ///     // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
     ///     let response = txn.upsert_with_vars(q, vars, vec![mu_1, mu_2]).expect("failed to upsert data");
+    ///     txn.commit().expect("Txn is not committed");
     /// }
     /// ```
     ///
@@ -471,6 +490,24 @@ pub trait Mutate: Query {
         V: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
 
+    ///
+    /// This function allows you to run upserts with query variables consisting of one query and one
+    /// ore more mutations.
+    ///
+    /// Mutation is also committed.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `q`: Dgraph query
+    /// * `mu`: required mutations
+    /// * `vars`: query variables
+    ///
+    /// # Errors
+    ///
+    /// * `GrpcError`: there is error in communication or server does not accept mutation
+    /// * `MissingTxnContext`: there is error in txn setup
+    ///
     #[cfg(feature = "dgraph-1-1")]
     fn upsert_with_vars_and_commit_now<Q, K, V, M>(
         self,
@@ -488,7 +525,7 @@ pub trait Mutate: Query {
 impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     fn discard(self) -> Result<(), DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
+        let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
             async_txn.discard().await
@@ -497,7 +534,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
 
     fn commit(self) -> Result<(), DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
+        let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
             async_txn.commit().await
@@ -515,7 +552,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
 
     fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
+        let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
             async_txn.mutate_and_commit_now(mu).await
@@ -543,9 +580,9 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         M: Into<UpsertMutation> + Send + Sync,
     {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
+        let async_txn = self.extra.async_txn;
         rt.block_on(async move {
-            let mut async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
             async_txn.upsert_and_commit_now(query, mu).await
         })
     }
@@ -585,10 +622,12 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         M: Into<UpsertMutation> + Send + Sync,
     {
         let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
-        let async_txn = Arc::clone(&self.extra.async_txn);
+        let async_txn = self.extra.async_txn;
         rt.block_on(async move {
-            let mut async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
-            async_txn.upsert_with_vars_and_commit_now(query, vars, mu).await
+            let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
+            async_txn
+                .upsert_with_vars_and_commit_now(query, vars, mu)
+                .await
         })
     }
 }
