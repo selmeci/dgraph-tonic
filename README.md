@@ -341,7 +341,7 @@ async fn main() {
 
 Avaibale since `dgraph-1-1`.
 
-The `txn.upsert(query, mutation)` function allows you to run upserts consisting of one query and one or more mutations. Query variables could be defined with `txn.upsert_with_vars(query, vars, mutation)`. Transaction in upsert is commited.
+The `txn.upsert(query, mutation)` function allows you to run upserts consisting of one query and one or more mutations. Query variables could be defined with `txn.upsert_with_vars(query, vars, mutation)`. If you would like to commit upsert operation you can use `txn.upsert_with_vars_and_commit_now()`. Txn object is being consumed in this case.
 
 To know more about upsert, we highly recommend going through the docs at https://docs.dgraph.io/mutations/#upsert-block.
 
@@ -360,10 +360,11 @@ async fn main() {
   let txn = client.new_mutated_txn();
   // Upsert: If wrong_email found, update the existing data or else perform a new mutation.
   let response = txn.upsert(q, mu).await.expect("Upserted data");
+  tnx.commit().await.expect("Committed");
 }
 ```
 
-You can upsert with one mutation or vector of mutations.
+You can upsert with one mutation or vector of mutations. If you would like to commit upsert operation you can use `txn.upsert_and_commit_now()`. Txn object is being consumed in this case.
 
 ### Running a Conditional Upsert
 
@@ -390,6 +391,7 @@ async fn main() {
   let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
   let txn = client.new_mutated_txn();
   let response = txn.upsert(q, vec![mu]).await.expect("Upserted data");
+  tnx.commit().await.expect("Committed");
 }
 ```
 
@@ -493,7 +495,8 @@ cargo test --no-default-features --features dgraph-1-1 -- --test-threads=1
 Contributions are welcome. Feel free to raise an issue, for feature requests, bug fixes and improvements.
 
 Run these commands, before you create pull request:
-```shell script
+
+```bash
 rustup component add rustfmt
 cargo fmt
 ```
