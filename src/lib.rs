@@ -16,7 +16,9 @@ pub use crate::client::{
 pub use crate::client::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
-pub use crate::client::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
+pub use crate::client::{
+    Client, ClientVariant, IClient, Txn, TxnBestEffort, TxnMutated, TxnReadOnly,
+};
 #[cfg(feature = "tls")]
 pub use crate::client::{TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
 pub use crate::errors::{ClientError, DgraphError};
