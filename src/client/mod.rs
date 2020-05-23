@@ -271,6 +271,50 @@ impl<C: IClient> ClientVariant<C> {
     }
 
     ///
+    /// Drop all data in DB
+    ///
+    ///
+    /// # Errors
+    ///
+    /// * gRPC error
+    /// * DB reject alter command
+    ///
+    /// # Example
+    ///
+    ///
+    /// ```
+    /// use dgraph_tonic::{Client, Operation};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = client().await;
+    ///     client.drop_all().await.expect("Data not dropped");
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub async fn drop_all(&self) -> Result<Payload, Error> {
+        let op = Operation {
+            drop_all: true,
+            ..Default::default()
+        };
+        self.alter(op).await
+    }
+
+    ///
     /// Check DB version
     ///
     /// # Errors
@@ -323,6 +367,13 @@ mod tests {
             ..Default::default()
         };
         let response = client.alter(op).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn drop_all() {
+        let client = client().await;
+        let response = client.drop_all().await;
         assert!(response.is_ok());
     }
 

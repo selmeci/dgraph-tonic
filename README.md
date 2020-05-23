@@ -176,6 +176,19 @@ async fn main() {
 
 `Operation` contains other fields as well, including `DropAttr` and `DropAll`. `DropAll` is useful if you wish to discard all the data, and start from a clean slate, without bringing the instance down. `DropAttr` is used to drop all the data related to a predicate.
 
+If you want to drop all data in DB, you can use:
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  client.drop_all().await.expect("Data not dropped");
+}
+```
+
+
 ### Create a transaction
 
 Transaction is modeled with [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/). The typestate pattern is an API design pattern that encodes information about an object's run-time state in its compile-time type. This principle allows us to identify some type of errors, like mutation in read only transaction, during compilation. Transaction types are:
