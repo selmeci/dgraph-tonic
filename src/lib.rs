@@ -30,6 +30,8 @@ pub use crate::txn::{
 mod api;
 mod client;
 mod errors;
+#[cfg(feature = "experimental")]
+mod stream;
 mod stub;
 #[cfg(feature = "sync")]
 pub mod sync;
