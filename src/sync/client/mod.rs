@@ -272,23 +272,24 @@ impl<C: IClient> ClientVariant<C> {
     ///
     ///
     /// ```
-    /// use dgraph_tonic::{Client, Operation};
+    /// use dgraph_tonic::sync::Client;
     /// #[cfg(feature = "acl")]
-    /// use dgraph_tonic::{AclClientType, LazyChannel};
+    /// use dgraph_tonic::sync::AclClientType;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyChannel;
     ///
     /// #[cfg(not(feature = "acl"))]
-    /// async fn client() -> Client {
+    /// fn client() -> Client {
     ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
     /// }
     ///
     /// #[cfg(feature = "acl")]
-    /// async fn client() -> AclClientType<LazyChannel> {
+    /// fn client() -> AclClientType<LazyChannel> {
     ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
     ///     default.login("groot", "password").expect("Acl client")
     /// }
     ///
-    /// #[tokio::main]
-    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let client = client();
     ///     client.drop_all().expect("Data not dropped");
     ///     Ok(())
