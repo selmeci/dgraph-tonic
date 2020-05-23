@@ -15,4 +15,6 @@ pub use crate::sync::txn::{
 };
 
 pub(crate) mod client;
+#[cfg(feature = "experimental")]
+pub(crate) mod iterator;
 pub(crate) mod txn;

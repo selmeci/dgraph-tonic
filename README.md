@@ -176,6 +176,19 @@ async fn main() {
 
 `Operation` contains other fields as well, including `DropAttr` and `DropAll`. `DropAll` is useful if you wish to discard all the data, and start from a clean slate, without bringing the instance down. `DropAttr` is used to drop all the data related to a predicate.
 
+If you want to drop all data in DB, you can use:
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  client.drop_all().await.expect("Data not dropped");
+}
+```
+
+
 ### Create a transaction
 
 Transaction is modeled with [The Typestate Pattern in Rust](http://cliffle.com/blog/rust-typestate/). The typestate pattern is an API design pattern that encodes information about an object's run-time state in its compile-time type. This principle allows us to identify some type of errors, like mutation in read only transaction, during compilation. Transaction types are:
@@ -336,6 +349,56 @@ async fn main() {
   println!("{:#?}", response.schema);
 }
 ```
+
+#### Stream/Iterator
+
+This functions are avaiable in `experimental` feature.
+
+Sometimes you cannot fetch all desired data from query at once, because it can be huge response which can result into gRPC or other error. In thise case you can transfrom you query into stream `Stream<Item = Result<T, Error>>` (or iterator in sync mode) which will query your data in chunks with defined capacity. There exist some limitations how you must defined you query:
+
+1. your query must accept `$first: string, $offset: string` input arguments.
+2. items for stream/iterator must be returned in block with `items` name.
+
+Stream/Iterator ends when:
+
+- query returns no items
+- query returns error which is last item returned from stream
+- query result cannot be deserialized into `Vec<T>`.
+
+```rust
+use std::collections::HashMap;
+use failure::Error;
+use futures::pin_mut;
+use futures::stream::StreamExt;
+use dgraph_tonic::{Client, Response, Query};
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct Person {
+  uid: String,
+  name: String,
+}
+
+#[tokio::main]
+async fn main() {
+  let query = r#"query stream($first: string, $offset: string, $name: string) {
+         items(func: eq(name, $name), first: $first, offset: $offset) {
+             uid
+             name
+         }
+     }"#;
+  let mut vars = HashMap::new();
+  vars.insert("$name", "Alice");
+  let client = client().await;
+  let stream = client.new_read_only_txn().into_stream_with_vars(query, vars, 100);
+  pin_mut!(stream);
+  let alices: Vec<Result<Person, Error>> = stream.collect().await;
+}
+```
+
+If you don't want to specify input vars, you can just call `client.new_read_only_txn().into_stream(query, 100)`.
+
+Sync read only transaction can be transformed into iterator with `client.new_read_only_txn().into_iter(query, 100)` and `client.new_read_only_txn().into_iter_with_vars(query, vars, 100)`
 
 ### Running an Upsert: Query + Mutation
 

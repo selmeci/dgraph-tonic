@@ -71,3 +71,12 @@ jobs:
         - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
         - cargo fmt -- --check
         - cargo test --features acl --features sync --verbose -- --test-threads=1
+    - name: Dgraph 20.03 experimental tests
+      rust: stable
+      before_install:
+        - docker-compose -f docker-compose-20-03-acl.yaml up -d
+        - docker ps
+      script:
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
+        - cargo fmt -- --check
+        - cargo test --features acl --features sync --features experimental --verbose -- --test-threads=1

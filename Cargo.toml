@@ -16,6 +16,7 @@ exclude = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-stream = "0.2"
 async-trait = "0.1"
 failure = "0.1"
 futures = "0.3"
@@ -35,9 +36,10 @@ tonic-build = "0.2"
 
 [features]
 default = ["dgraph-1-1"]
-all = ["acl", "tls", "sync"]
+all = ["acl", "tls", "sync", "experimental"]
 acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []
 sync = []
 tls = []
+experimental = []

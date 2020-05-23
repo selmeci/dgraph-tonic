@@ -266,6 +266,7 @@ mod tests {
     use std::collections::HashMap;
 
     use serde_derive::{Deserialize, Serialize};
+    use std::time::Duration;
 
     use crate::client::Client;
     #[cfg(feature = "acl")]
@@ -297,6 +298,19 @@ mod tests {
     #[derive(Serialize, Deserialize, Default, Debug)]
     pub struct Uid {
         pub uid: String,
+    }
+
+    async fn insert_data() {
+        let client = client().await;
+        let txn = client.new_mutated_txn();
+        let p = Person {
+            uid: "_:alice".to_string(),
+            name: "Alice".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate_and_commit_now(mu).await;
+        assert!(response.is_ok());
     }
 
     #[tokio::test]
@@ -344,6 +358,10 @@ mod tests {
     #[tokio::test]
     async fn upsert() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -382,6 +400,10 @@ mod tests {
     #[tokio::test]
     async fn upsert_and_commit_now() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -420,6 +442,10 @@ mod tests {
     #[tokio::test]
     async fn upsert_with_vars() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -460,6 +486,10 @@ mod tests {
     #[tokio::test]
     async fn upsert_with_vars_and_commit_now() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
         let mut txn = client.new_mutated_txn();
         //first mutation
         let p = Person {
@@ -501,6 +531,11 @@ mod tests {
     #[tokio::test]
     async fn query() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
         let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -516,6 +551,11 @@ mod tests {
     #[tokio::test]
     async fn mutated_txn_query() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
         let mut txn = client.new_mutated_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -532,6 +572,12 @@ mod tests {
     #[tokio::test]
     async fn best_effort_txn_query() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
+        std::thread::sleep(Duration::from_secs(1));
         let mut txn = client.new_best_effort_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -547,6 +593,11 @@ mod tests {
     #[tokio::test]
     async fn query_with_vars() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
         let mut txn = client.new_read_only_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
@@ -564,6 +615,11 @@ mod tests {
     #[tokio::test]
     async fn mutated_txn_query_with_vars() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
         let mut txn = client.new_mutated_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
@@ -582,6 +638,11 @@ mod tests {
     #[tokio::test]
     async fn best_effort_txn_query_with_vars() {
         let client = client().await;
+        client
+            .set_schema("name: string @index(exact) .")
+            .await
+            .expect("Schema is not updated");
+        insert_data().await;
         let mut txn = client.new_best_effort_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
