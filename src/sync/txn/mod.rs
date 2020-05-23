@@ -268,6 +268,19 @@ mod tests {
         pub uid: String,
     }
 
+    fn insert_data() {
+        let client = client();
+        let txn = client.new_mutated_txn();
+        let p = Person {
+            uid: "_:alice".to_string(),
+            name: "Alice".to_string(),
+        };
+        let mut mu = Mutation::new();
+        mu.set_set_json(&p).expect("Invalid JSON");
+        let response = txn.mutate_and_commit_now(mu);
+        assert!(response.is_ok());
+    }
+
     #[test]
     fn mutate_and_commit_now() {
         let client = client();
@@ -468,6 +481,10 @@ mod tests {
     #[test]
     fn query() {
         let client = client();
+        client
+            .set_schema("name: string @index(exact) .")
+            .expect("Schema is not updated");
+        insert_data();
         let mut txn = client.new_read_only_txn();
         let query = r#"{
             uids(func: eq(name, "Alice")) {
@@ -483,6 +500,10 @@ mod tests {
     #[test]
     fn query_with_vars() {
         let client = client();
+        client
+            .set_schema("name: string @index(exact) .")
+            .expect("Schema is not updated");
+        insert_data();
         let mut txn = client.new_read_only_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
