@@ -12,6 +12,19 @@ services:
 jobs:
   fast_finish: true
   include:
+    - name: Coverage
+      rust: stable
+      before_install:
+        - docker-compose -f docker-compose-20-03-acl.yaml up -d
+        - docker ps
+      before_script:
+        - cargo install cargo-tarpaulin
+        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
+      script:
+        - cargo build
+        - cargo test --features acl --features sync --features experimental --verbose -- --test-threads=1
+      after_success:
+        - cargo tarpaulin -v --features acl sync --exclude-files src/api/* --ciserver travis-ci --coveralls $TRAVIS_JOB_ID -- --test-threads=1
     - name: Check simple example
       rust: stable
       script:
@@ -87,16 +100,3 @@ jobs:
         - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
         - cargo fmt -- --check
         - cargo test --features acl --features sync --features experimental --verbose -- --test-threads=1
-    - name: Coverage
-      rust: stable
-      before_install:
-        - docker-compose -f docker-compose-20-03-acl.yaml up -d
-        - docker ps
-      before_script:
-        - cargo install cargo-tarpaulin
-        - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu
-      script:
-        - cargo build
-        - cargo test --features acl --features sync --features experimental --verbose -- --test-threads=1
-      after_success:
-        - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
