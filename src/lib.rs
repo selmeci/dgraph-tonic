@@ -12,6 +12,7 @@ pub use crate::client::Endpoints;
 pub use crate::client::{
     AclClient, AclClientType, LazyChannel, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
 };
+pub use crate::client::{ILazyChannel, ILazyClient};
 #[cfg(all(feature = "acl", feature = "tls"))]
 pub use crate::client::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,

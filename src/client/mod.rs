@@ -25,8 +25,8 @@ pub use crate::client::acl::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
 pub use crate::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
-use crate::client::lazy::ILazyChannel;
-pub(crate) use crate::client::lazy::ILazyClient;
+pub use crate::client::lazy::ILazyChannel;
+pub use crate::client::lazy::ILazyClient;
 #[cfg(feature = "tls")]
 pub use crate::client::tls::{TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
 
