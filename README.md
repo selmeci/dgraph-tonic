@@ -355,16 +355,16 @@ async fn main() {
 
 This functions are avaiable in `experimental` feature.
 
-Sometimes you cannot fetch all desired data from query at once, because it can be huge response which can result into gRPC or other error. In thise case you can transfrom you query into stream `Stream<Item = Result<T, Error>>` (or iterator in sync mode) which will query your data in chunks with defined capacity. There exist some limitations how you must defined you query:
+Sometimes you cannot fetch all desired data from query at once because it can be huge response which can results into gRPC error, etc. . In this case you can transfrom your query into stream `Stream<Item = Result<T, Error>>` (or iterator in sync mode) which will query your data in a chunks with defined capacity. Exist some limitations how you must defined your query:
 
 1. your query must accept `$first: string, $offset: string` input arguments.
 2. items for stream/iterator must be returned in block with `items` name.
 
 Stream/Iterator ends when:
 
-- query returns no items
-- query returns error which is last item returned from stream
-- query result cannot be deserialized into `Vec<T>`.
+- query returns no items,
+- query returns error which is last item returned from stream,
+- query response cannot be deserialized into `Vec<T>`.
 
 ```rust
 use std::collections::HashMap;
@@ -397,9 +397,9 @@ async fn main() {
 }
 ```
 
-If you don't want to specify input vars, you can just call `client.new_read_only_txn().into_stream(query, 100)`.
+If you don't want to specify input vars, you can call `client.new_read_only_txn().into_stream(query, 100)`.
 
-Sync read only transaction can be transformed into iterator with `client.new_read_only_txn().into_iter(query, 100)` and `client.new_read_only_txn().into_iter_with_vars(query, vars, 100)`
+_Sync_ read only transaction can be transformed into iterator with `client.new_read_only_txn().into_iter(query, 100)` and `client.new_read_only_txn().into_iter_with_vars(query, vars, 100)`
 
 ### Running an Upsert: Query + Mutation
 
