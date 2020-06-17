@@ -276,6 +276,39 @@ Sometimes, you only want to commit a mutation, without querying anything further
 
 In `dgraph-1-0` a `Mutation::with_ignored_index_conflict()` can be applied on a `Mutation` object to not run conflict detection over the index, which would decrease the number of transaction conflicts and aborts. However, this would come at the cost of potentially inconsistent upsert operations. This flag is avaliable only in *dgraph-1-0*.
 
+#### How to get assigned UIDs from response
+
+You can [specify your own key for returned uid](https://dgraph.io/docs/mutations/#setting-literal-values) like:
+
+```rust
+use dgraph_tonic::{Mutate, Client};
+use serde::{Serialize, Deserialize};
+use serde_json::json;
+
+#[tokio::main]
+async fn main() {
+  let p = json!({
+    "uid": "_:diggy",
+    "name": "diggy",
+    "food": "pizza"
+  });
+  let mut mu = Mutation::new();
+  mu.set_set_json(&p).expect("JSON");
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let mut txn = client.new_mutated_txn();
+  let response = txn.mutate(mu).await.expect("Mutated");
+  txn.commit().await.expect("Transaction is commited");
+  println!("{:?}", response.uids);
+}
+```
+
+Assigned uids are returned in response property `uids`. Exmple printlns something like:
+
+```json
+{"diggy": "0xc377"}
+
+```
+
 ### Run a query
 
 You can run a query by calling `txn.query(q)`. You will need to pass in a GraphQL+- query string. If you want to pass an additional map of any variables that you might want to set in the query, call `txn.query_with_vars(q, vars)` with the variables map as second argument. All query operations are defined in `Query` trait.
