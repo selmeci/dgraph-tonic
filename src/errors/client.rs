@@ -4,6 +4,7 @@ use crate::Status;
 /// Possible errors for client
 ///
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     InvalidEndpoint,
     NoEndpointsDefined,

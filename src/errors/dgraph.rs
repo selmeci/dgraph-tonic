@@ -2,6 +2,7 @@
 /// Possible Dgraph errors
 ///
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     StartTsMismatch,
     GrpcError(super::ClientError),
