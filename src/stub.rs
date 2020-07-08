@@ -1,4 +1,3 @@
-use failure::Error;
 use tonic::Request;
 
 use async_trait::async_trait;
@@ -27,21 +26,21 @@ impl<C: ILazyClient> Stub<C> {
 
 #[async_trait]
 impl<C: ILazyClient> IDgraphClient for Stub<C> {
-    async fn login(&mut self, login: LoginRequest) -> Result<DgraphResponse, Error> {
+    async fn login(&mut self, login: LoginRequest) -> Result<DgraphResponse, ClientError> {
         let request = Request::new(login);
         let client = self.client.client().await?;
         match client.login(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotLogin(status).into()),
+            Err(status) => Err(ClientError::CannotLogin(status)),
         }
     }
 
-    async fn query(&mut self, query: DgraphRequest) -> Result<DgraphResponse, Error> {
+    async fn query(&mut self, query: DgraphRequest) -> Result<DgraphResponse, ClientError> {
         let request = Request::new(query);
         let client = self.client.client().await?;
         match client.query(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotQuery(status).into()),
+            Err(status) => Err(ClientError::CannotQuery(status)),
         }
     }
 
@@ -56,39 +55,39 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse, Error> {
+    async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse, ClientError> {
         let request = Request::new(req);
         let client = self.client.client().await?;
         match client.query(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotDoRequest(status).into()),
+            Err(status) => Err(ClientError::CannotDoRequest(status)),
         }
     }
 
-    async fn alter(&mut self, op: Operation) -> Result<Payload, Error> {
+    async fn alter(&mut self, op: Operation) -> Result<Payload, ClientError> {
         let request = Request::new(op);
         let client = self.client.client().await?;
         match client.alter(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotAlter(status).into()),
+            Err(status) => Err(ClientError::CannotAlter(status)),
         }
     }
 
-    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext, Error> {
+    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext, ClientError> {
         let request = Request::new(txn);
         let client = self.client.client().await?;
         match client.commit_or_abort(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotCommitOrAbort(status).into()),
+            Err(status) => Err(ClientError::CannotCommitOrAbort(status)),
         }
     }
 
-    async fn check_version(&mut self) -> Result<Version, Error> {
+    async fn check_version(&mut self) -> Result<Version, ClientError> {
         let request = Request::new(Check {});
         let client = self.client.client().await?;
         match client.check_version(request).await {
             Ok(response) => Ok(response.into_inner()),
-            Err(status) => Err(ClientError::CannotCheckVersion(status).into()),
+            Err(status) => Err(ClientError::CannotCheckVersion(status)),
         }
     }
 }

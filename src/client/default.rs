@@ -1,10 +1,9 @@
 use crate::client::lazy::{ILazyChannel, LazyClient};
-use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
+use crate::client::{balance_list, rnd_item, ClientError, ClientState, ClientVariant, IClient};
 use crate::{
     Endpoint, Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
 };
 use async_trait::async_trait;
-use failure::Error;
 use http::Uri;
 use std::convert::TryInto;
 use tonic::transport::Channel;
@@ -26,12 +25,15 @@ impl LazyChannel {
 
 #[async_trait]
 impl ILazyChannel for LazyChannel {
-    async fn channel(&mut self) -> Result<Channel, Error> {
+    async fn channel(&mut self) -> Result<Channel, ClientError> {
         if let Some(channel) = &self.channel {
             Ok(channel.to_owned())
         } else {
             let endpoint: Endpoint = self.uri.to_owned().into();
-            let channel = endpoint.connect().await?;
+            let channel = endpoint
+                .connect()
+                .await
+                .map_err(|err| ClientError::Transport(err.into()))?;
             self.channel.replace(channel.to_owned());
             Ok(channel)
         }
@@ -112,7 +114,7 @@ impl Client {
     /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, ClientError> {
         let extra = Default {
             clients: balance_list(endpoints)?
                 .into_iter()

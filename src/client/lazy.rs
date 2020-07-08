@@ -1,7 +1,6 @@
 use crate::api::dgraph_client::DgraphClient;
-use crate::Result;
+use crate::{ClientError, Result};
 use async_trait::async_trait;
-use failure::Error;
 use std::fmt::Debug;
 use tonic::transport::Channel;
 
@@ -13,7 +12,7 @@ pub trait ILazyChannel: Sync + Send + Debug + Clone {
     ///
     /// Try create and connect gRPC channel
     ///
-    async fn channel(&mut self) -> Result<Channel, Error>;
+    async fn channel(&mut self) -> Result<Channel, ClientError>;
 }
 
 ///
@@ -26,7 +25,7 @@ pub trait ILazyClient: Sync + Send + Debug + Clone {
     ///
     /// initialize gRPC client on first use
     ///
-    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, Error>;
+    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, ClientError>;
 
     ///
     /// Return used lazy channel for client
@@ -52,7 +51,7 @@ impl<C: ILazyChannel> LazyClient<C> {
         }
     }
 
-    async fn init(&mut self) -> Result<(), Error> {
+    async fn init(&mut self) -> Result<(), ClientError> {
         if self.client.is_none() {
             let client = DgraphClient::new(self.channel.channel().await?);
             self.client.replace(client);
@@ -65,7 +64,7 @@ impl<C: ILazyChannel> LazyClient<C> {
 impl<C: ILazyChannel> ILazyClient for LazyClient<C> {
     type Channel = C;
 
-    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, Error> {
+    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, ClientError> {
         self.init().await?;
         if let Some(client) = &mut self.client {
             Ok(client)
