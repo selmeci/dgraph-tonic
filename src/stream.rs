@@ -1,12 +1,14 @@
-use crate::client::ILazyClient;
-use crate::{Query, TxnReadOnlyType};
+use std::collections::HashMap;
+use std::hash::Hash;
+
+use anyhow::Result;
 use async_stream::try_stream;
-use failure::Error;
 use futures::stream::Stream;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use std::collections::HashMap;
-use std::hash::Hash;
+
+use crate::client::ILazyClient;
+use crate::{Query, TxnReadOnlyType};
 
 #[derive(Deserialize)]
 struct Chunk<T> {
@@ -22,11 +24,7 @@ impl<T: DeserializeOwned> Default for Chunk<T> {
 }
 
 impl<C: ILazyClient> TxnReadOnlyType<C> {
-    async fn fetch_chunk<Q, T>(
-        &mut self,
-        query: Q,
-        vars: HashMap<String, String>,
-    ) -> Result<Vec<T>, Error>
+    async fn fetch_chunk<Q, T>(&mut self, query: Q, vars: HashMap<String, String>) -> Result<Vec<T>>
     where
         Q: Into<String> + Send + Sync,
         T: DeserializeOwned,
@@ -60,7 +58,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use failure::Error;
+    /// use anyhow::Result;
     /// use futures::pin_mut;
     /// use futures::stream::StreamExt;
     /// use dgraph_tonic::Client;
@@ -98,11 +96,11 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///   let client = client().await;
     ///   let stream = client.new_read_only_txn().into_stream(query,100);
     ///   pin_mut!(stream);
-    ///   let alices: Vec<Result<Person, Error>> = stream.collect().await;
+    ///   let alices: Vec<Result<Person>> = stream.collect().await;
     /// }
     /// ```
     ///
-    pub fn into_stream<Q, T>(self, query: Q, first: usize) -> impl Stream<Item = Result<T, Error>>
+    pub fn into_stream<Q, T>(self, query: Q, first: usize) -> impl Stream<Item = Result<T>>
     where
         Q: Into<String> + Send + Sync,
         T: Unpin + DeserializeOwned,
@@ -136,7 +134,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// use failure::Error;
+    /// use anyhow::Result;
     /// use futures::pin_mut;
     /// use futures::stream::StreamExt;
     /// use dgraph_tonic::{Client, Query};
@@ -176,7 +174,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///   let client = client().await;
     ///   let stream = client.new_read_only_txn().into_stream_with_vars(query, vars, 100);
     ///   pin_mut!(stream);
-    ///   let alices: Vec<Result<Person, Error>> = stream.collect().await;
+    ///   let alices: Vec<Result<Person>> = stream.collect().await;
     /// }
     /// ```
     ///
@@ -185,7 +183,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
         query: Q,
         vars: HashMap<K, V>,
         first: usize,
-    ) -> impl Stream<Item = Result<T, Error>>
+    ) -> impl Stream<Item = Result<T>>
     where
         Q: Into<String> + Send + Sync,
         T: Unpin + DeserializeOwned,
@@ -227,17 +225,17 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
 
+    use anyhow::Result;
+    use futures::pin_mut;
+    use futures::stream::StreamExt;
     use serde_derive::{Deserialize, Serialize};
 
     use crate::client::Client;
     #[cfg(feature = "acl")]
     use crate::client::{AclClientType, LazyChannel};
     use crate::{Mutate, Mutation};
-    use failure::Error;
-    use futures::pin_mut;
-    use futures::stream::StreamExt;
-    use std::collections::HashMap;
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {
@@ -301,7 +299,7 @@ mod tests {
             2,
         );
         pin_mut!(stream);
-        let cars: Vec<Result<Car, Error>> = stream.collect().await;
+        let cars: Vec<Result<Car>> = stream.collect().await;
         assert_eq!(cars.len(), 3);
         assert!(cars.iter().all(|car| car.is_ok()))
     }
@@ -348,7 +346,7 @@ mod tests {
             2,
         );
         pin_mut!(stream);
-        let cars: Vec<Result<Car, Error>> = stream.collect().await;
+        let cars: Vec<Result<Car>> = stream.collect().await;
         assert_eq!(cars.len(), 2);
         assert!(cars.iter().all(|car| car.is_ok()))
     }
@@ -392,7 +390,7 @@ mod tests {
             2,
         );
         pin_mut!(stream);
-        let cars: Vec<Result<Person, Error>> = stream.collect().await;
+        let cars: Vec<Result<Person>> = stream.collect().await;
         assert_eq!(cars.len(), 1);
         assert!(cars.iter().all(|car| car.is_err()))
     }

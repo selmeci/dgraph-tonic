@@ -1,12 +1,14 @@
-use crate::client::lazy::{ILazyChannel, LazyClient};
-use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
-use crate::{Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
-use async_trait::async_trait;
-use failure::Error;
-use http::Uri;
 use std::convert::TryInto;
 use std::sync::Arc;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use http::Uri;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
+
+use crate::client::lazy::{ILazyChannel, LazyClient};
+use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
+use crate::{Endpoints, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 
 ///
 /// Lazy initialization of gRPC channel with TLS
@@ -31,7 +33,7 @@ impl LazyTlsChannel {
 
 #[async_trait]
 impl ILazyChannel for LazyTlsChannel {
-    async fn channel(&mut self) -> Result<Channel, Error> {
+    async fn channel(&mut self) -> Result<Channel> {
         if let Some(channel) = &self.channel {
             Ok(channel.to_owned())
         } else {
@@ -137,7 +139,7 @@ impl TlsClient {
         server_root_ca_cert: V,
         client_cert: V,
         client_key: V,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self> {
         let server_root_ca_cert = Certificate::from_pem(server_root_ca_cert.into());
         let client_identity = Identity::from_pem(client_cert.into(), client_key.into());
         let tls = ClientTlsConfig::new()

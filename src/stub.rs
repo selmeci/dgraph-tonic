@@ -1,14 +1,13 @@
-use failure::Error;
-use tonic::Request;
-
+use anyhow::Result;
 use async_trait::async_trait;
+use tonic::Request;
 
 use crate::client::ILazyClient;
 #[cfg(feature = "dgraph-1-0")]
 use crate::{Assigned, Mutation};
 use crate::{
     Check, ClientError, IDgraphClient, LoginRequest, Operation, Payload, Request as DgraphRequest,
-    Response as DgraphResponse, Result, TxnContext, Version,
+    Response as DgraphResponse, TxnContext, Version,
 };
 
 ///
@@ -27,7 +26,7 @@ impl<C: ILazyClient> Stub<C> {
 
 #[async_trait]
 impl<C: ILazyClient> IDgraphClient for Stub<C> {
-    async fn login(&mut self, login: LoginRequest) -> Result<DgraphResponse, Error> {
+    async fn login(&mut self, login: LoginRequest) -> Result<DgraphResponse> {
         let request = Request::new(login);
         let client = self.client.client().await?;
         match client.login(request).await {
@@ -36,7 +35,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         }
     }
 
-    async fn query(&mut self, query: DgraphRequest) -> Result<DgraphResponse, Error> {
+    async fn query(&mut self, query: DgraphRequest) -> Result<DgraphResponse> {
         let request = Request::new(query);
         let client = self.client.client().await?;
         match client.query(request).await {
@@ -46,7 +45,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
     }
 
     #[cfg(feature = "dgraph-1-0")]
-    async fn mutate(&mut self, mu: Mutation) -> Result<Assigned, Error> {
+    async fn mutate(&mut self, mu: Mutation) -> Result<Assigned> {
         let request = Request::new(mu);
         let client = self.client.client().await?;
         match client.mutate(request).await {
@@ -56,7 +55,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse, Error> {
+    async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse> {
         let request = Request::new(req);
         let client = self.client.client().await?;
         match client.query(request).await {
@@ -65,7 +64,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         }
     }
 
-    async fn alter(&mut self, op: Operation) -> Result<Payload, Error> {
+    async fn alter(&mut self, op: Operation) -> Result<Payload> {
         let request = Request::new(op);
         let client = self.client.client().await?;
         match client.alter(request).await {
@@ -74,7 +73,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         }
     }
 
-    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext, Error> {
+    async fn commit_or_abort(&mut self, txn: TxnContext) -> Result<TxnContext> {
         let request = Request::new(txn);
         let client = self.client.client().await?;
         match client.commit_or_abort(request).await {
@@ -83,7 +82,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         }
     }
 
-    async fn check_version(&mut self) -> Result<Version, Error> {
+    async fn check_version(&mut self) -> Result<Version> {
         let request = Request::new(Check {});
         let client = self.client.client().await?;
         match client.check_version(request).await {

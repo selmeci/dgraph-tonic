@@ -1,15 +1,17 @@
+use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::Hash;
+use std::sync::{Arc, Mutex};
+
+use anyhow::Result;
+use async_trait::async_trait;
+use tokio::runtime::Runtime;
 
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnReadOnlyType, TxnVariant};
 use crate::txn::TxnBestEffortType as AsyncBestEffortTxn;
-use crate::{DgraphError, Query, Response, Result};
-use async_trait::async_trait;
-use std::collections::hash_map::RandomState;
-use std::hash::Hash;
-use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime;
+use crate::{Query, Response};
 
 ///
 /// Inner state for read only transaction
@@ -26,7 +28,7 @@ impl<C: ILazyClient> IState for BestEffort<C> {
         &mut self,
         query: Q,
         vars: HashMap<K, V, RandomState>,
-    ) -> Result<Response, DgraphError>
+    ) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,

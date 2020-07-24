@@ -1,14 +1,16 @@
+use std::convert::TryInto;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use http::Uri;
+
 use crate::client::lazy::LazyClient;
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{AclClientType, IClient as IAsyncClient, TlsClient as AsyncTlsClient};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
-use crate::{Endpoints, Result};
-use async_trait::async_trait;
-use failure::Error;
-use http::Uri;
-use std::convert::TryInto;
+use crate::Endpoints;
 
 ///
 /// Inner state for Tls Client
@@ -51,7 +53,7 @@ impl IClient for Tls {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClientType<Self::Channel>, Error> {
+    ) -> Result<AclClientType<Self::Channel>> {
         self.async_client.login(user_id, password).await
     }
 }
@@ -123,7 +125,7 @@ impl TlsClient {
         server_root_ca_cert: V,
         client_cert: V,
         client_key: V,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self> {
         let extra = Tls {
             async_client: AsyncTlsClient::new(
                 endpoints,

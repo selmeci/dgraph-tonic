@@ -1,10 +1,12 @@
-use crate::client::ILazyClient;
-use crate::sync::{Query, TxnReadOnlyType};
-use failure::Error;
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::hash::Hash;
+
+use anyhow::Result;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+
+use crate::client::ILazyClient;
+use crate::sync::{Query, TxnReadOnlyType};
 
 #[derive(Deserialize)]
 struct Chunk<T> {
@@ -54,7 +56,7 @@ where
         }
     }
 
-    fn fetch_items(&mut self) -> Result<Vec<T>, Error> {
+    fn fetch_items(&mut self) -> Result<Vec<T>> {
         let mut vars = self.vars.to_owned();
         vars.insert(String::from("$offset"), format!("{}", self.offset));
         let mut chunk: Chunk<T> = self
@@ -74,7 +76,7 @@ where
     C: ILazyClient,
     T: DeserializeOwned,
 {
-    type Item = Result<T, Error>;
+    type Item = Result<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.error {
@@ -128,7 +130,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::LazyChannel;
-    /// use failure::Error;
+    /// use anyhow::Result;
     /// use serde::Deserialize;
     ///
     /// #[cfg(not(feature = "acl"))]
@@ -158,11 +160,11 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///
     ///   let client = client();
     ///   let iterator = client.new_read_only_txn().into_iter(query,100);
-    ///   let alices: Vec<Result<Person, Error>> = iterator.collect();
+    ///   let alices: Vec<Result<Person>> = iterator.collect();
     /// }
     /// ```
     ///
-    pub fn into_iter<Q, T>(self, query: Q, first: usize) -> impl Iterator<Item = Result<T, Error>>
+    pub fn into_iter<Q, T>(self, query: Q, first: usize) -> impl Iterator<Item = Result<T>>
     where
         Q: Into<String>,
         T: DeserializeOwned,
@@ -200,7 +202,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     /// use dgraph_tonic::sync::AclClientType;
     /// #[cfg(feature = "acl")]
     /// use dgraph_tonic::LazyChannel;
-    /// use failure::Error;
+    /// use anyhow::Result;
     /// use std::collections::HashMap;
     /// use serde::Deserialize;
     ///
@@ -233,7 +235,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
     ///   let mut vars = HashMap::new();
     ///   vars.insert("$name", "Alice");
     ///   let iterator = client.new_read_only_txn().into_iter_with_vars(query, vars, 100);
-    ///   let alices: Vec<Result<Person, Error>> = iterator.collect();
+    ///   let alices: Vec<Result<Person>> = iterator.collect();
     /// }
     /// ```
     ///
@@ -242,7 +244,7 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
         query: Q,
         vars: HashMap<K, V>,
         first: usize,
-    ) -> impl Iterator<Item = Result<T, Error>>
+    ) -> impl Iterator<Item = Result<T>>
     where
         Q: Into<String>,
         T: DeserializeOwned,
@@ -259,7 +261,9 @@ impl<C: ILazyClient> TxnReadOnlyType<C> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
 
+    use anyhow::Result;
     use serde_derive::{Deserialize, Serialize};
 
     use crate::sync::txn::mutated::Mutate;
@@ -269,8 +273,6 @@ mod tests {
     #[cfg(feature = "acl")]
     use crate::LazyChannel;
     use crate::Mutation;
-    use failure::Error;
-    use std::collections::HashMap;
 
     #[cfg(not(feature = "acl"))]
     fn client() -> Client {
@@ -332,7 +334,7 @@ mod tests {
         "#,
             2,
         );
-        let cars: Vec<Result<Car, Error>> = iterator.collect();
+        let cars: Vec<Result<Car>> = iterator.collect();
         assert_eq!(cars.len(), 3);
         assert!(cars.iter().all(|car| car.is_ok()))
     }
@@ -377,7 +379,7 @@ mod tests {
             vars,
             2,
         );
-        let cars: Vec<Result<Car, Error>> = iterator.collect();
+        let cars: Vec<Result<Car>> = iterator.collect();
         assert_eq!(cars.len(), 2);
         assert!(cars.iter().all(|car| car.is_ok()))
     }
@@ -419,7 +421,7 @@ mod tests {
         "#,
             2,
         );
-        let cars: Vec<Result<Person, Error>> = stream.collect();
+        let cars: Vec<Result<Person>> = stream.collect();
         assert_eq!(cars.len(), 1);
         assert!(cars.iter().all(|car| car.is_err()))
     }

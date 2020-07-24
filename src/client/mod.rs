@@ -1,19 +1,10 @@
 use std::convert::TryInto;
-
-use failure::Error;
-use http::Uri;
-use rand::Rng;
-
-pub use crate::client::default::LazyChannel;
-pub use crate::client::endpoints::Endpoints;
-use crate::errors::ClientError;
-use crate::stub::Stub;
-use crate::{
-    IDgraphClient, Operation, Payload, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType,
-    TxnType,
-};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
+
+use anyhow::Result;
+use http::Uri;
+use rand::Rng;
 
 use crate::api::Version;
 #[cfg(feature = "acl")]
@@ -24,11 +15,18 @@ pub use crate::client::acl::{
 pub use crate::client::acl::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
+pub use crate::client::default::LazyChannel;
 pub use crate::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
+pub use crate::client::endpoints::Endpoints;
 use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
 #[cfg(feature = "tls")]
 pub use crate::client::tls::{TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
+use crate::errors::ClientError;
+use crate::stub::Stub;
+use crate::{
+    IDgraphClient, Operation, Payload, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+};
 
 #[cfg(feature = "acl")]
 pub(crate) mod acl;
@@ -56,7 +54,7 @@ pub(crate) fn rnd_item<T: Clone>(items: &[T]) -> T {
 ///
 pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
     endpoints: E,
-) -> Result<Vec<Uri>, Error> {
+) -> Result<Vec<Uri>> {
     let endpoints: Endpoints<U> = endpoints.into();
     let mut balance_list: Vec<Uri> = Vec::new();
     for maybe_endpoint in endpoints.endpoints {
@@ -217,7 +215,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn alter(&self, op: Operation) -> Result<Payload, Error> {
+    pub async fn alter(&self, op: Operation) -> Result<Payload> {
         let mut stub = self.any_stub();
         stub.alter(op).await
     }
@@ -262,7 +260,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload, Error> {
+    pub async fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),
             ..Default::default()
@@ -306,7 +304,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn drop_all(&self) -> Result<Payload, Error> {
+    pub async fn drop_all(&self) -> Result<Payload> {
         let op = Operation {
             drop_all: true,
             ..Default::default()
@@ -335,7 +333,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn check_version(&self) -> Result<Version, Error> {
+    pub async fn check_version(&self) -> Result<Version> {
         let mut stub = self.any_stub();
         stub.check_version().await
     }
@@ -343,10 +341,10 @@ impl<C: IClient> ClientVariant<C> {
 
 #[cfg(test)]
 mod tests {
-
-    use super::*;
     #[cfg(feature = "acl")]
     use crate::client::{Client, LazyChannel};
+
+    use super::*;
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {

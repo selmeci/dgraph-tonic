@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use anyhow::Result;
 use async_trait::async_trait;
 
 use crate::client::ILazyClient;
@@ -105,7 +106,7 @@ pub trait Mutate: Query {
     ///
     /// Return gRPC error.
     ///
-    async fn discard(mut self) -> Result<(), DgraphError>;
+    async fn discard(mut self) -> Result<()>;
 
     ///
     /// Commit transaction
@@ -114,7 +115,7 @@ pub trait Mutate: Query {
     ///
     /// Return gRPC error.
     ///
-    async fn commit(self) -> Result<(), DgraphError>;
+    async fn commit(self) -> Result<()>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -169,7 +170,7 @@ pub trait Mutate: Query {
     /// }
     /// ```
     ///
-    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError>;
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse>;
 
     ///
     /// Adding or removing data in Dgraph is called a mutation.
@@ -228,8 +229,7 @@ pub trait Mutate: Query {
     /// }
     /// ```
     ///
-    async fn mutate_and_commit_now(mut self, mu: Mutation)
-        -> Result<MutationResponse, DgraphError>;
+    async fn mutate_and_commit_now(mut self, mu: Mutation) -> Result<MutationResponse>;
 
     ///
     /// This function allows you to run upserts consisting of one query and one or more mutations.
@@ -334,7 +334,7 @@ pub trait Mutate: Query {
     /// ```
     ///
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
@@ -356,11 +356,7 @@ pub trait Mutate: Query {
     /// * `MissingTxnContext`: there is error in txn setup
     ///
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert_and_commit_now<Q, M>(
-        mut self,
-        query: Q,
-        mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    async fn upsert_and_commit_now<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync;
@@ -480,7 +476,7 @@ pub trait Mutate: Query {
         query: Q,
         vars: HashMap<K, V>,
         mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -511,7 +507,7 @@ pub trait Mutate: Query {
         query: Q,
         vars: HashMap<K, V>,
         mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -521,30 +517,27 @@ pub trait Mutate: Query {
 
 #[async_trait]
 impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
-    async fn discard(mut self) -> Result<(), DgraphError> {
+    async fn discard(mut self) -> Result<()> {
         self.context.aborted = true;
         self.commit_or_abort().await
     }
 
-    async fn commit(self) -> Result<(), DgraphError> {
+    async fn commit(self) -> Result<()> {
         self.commit_or_abort().await
     }
 
-    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse, DgraphError> {
+    async fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse> {
         self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, false)
             .await
     }
 
-    async fn mutate_and_commit_now(
-        mut self,
-        mu: Mutation,
-    ) -> Result<MutationResponse, DgraphError> {
+    async fn mutate_and_commit_now(mut self, mu: Mutation) -> Result<MutationResponse> {
         self.do_mutation("", HashMap::<String, String>::with_capacity(0), mu, true)
             .await
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse, DgraphError>
+    async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
@@ -559,11 +552,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     }
 
     #[cfg(feature = "dgraph-1-1")]
-    async fn upsert_and_commit_now<Q, M>(
-        mut self,
-        query: Q,
-        mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    async fn upsert_and_commit_now<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
@@ -578,7 +567,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         query: Q,
         vars: HashMap<K, V>,
         mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -594,7 +583,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         query: Q,
         vars: HashMap<K, V>,
         mu: M,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -613,7 +602,7 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         _vars: HashMap<K, V>,
         mut mu: Mutation,
         commit_now: bool,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -625,12 +614,12 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         let assigned = match self.stub.mutate(mu).await {
             Ok(assigned) => assigned,
             Err(err) => {
-                return Err(DgraphError::GrpcError(err));
+                anyhow::bail!(DgraphError::GrpcError(err));
             }
         };
         match assigned.context.as_ref() {
             Some(src) => self.context.merge_context(src)?,
-            None => return Err(DgraphError::MissingTxnContext),
+            None => anyhow::bail!(DgraphError::MissingTxnContext),
         }
         Ok(assigned)
     }
@@ -642,7 +631,7 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         vars: HashMap<K, V>,
         mu: M,
         commit_now: bool,
-    ) -> Result<MutationResponse, DgraphError>
+    ) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -666,17 +655,17 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         let response = match self.stub.do_request(request).await {
             Ok(response) => response,
             Err(err) => {
-                return Err(DgraphError::GrpcError(err));
+                anyhow::bail!(DgraphError::GrpcError(err));
             }
         };
         match response.txn.as_ref() {
             Some(txn) => self.context.merge_context(txn)?,
-            None => return Err(DgraphError::MissingTxnContext),
+            None => anyhow::bail!(DgraphError::MissingTxnContext),
         }
         Ok(response)
     }
 
-    async fn commit_or_abort(self) -> Result<(), DgraphError> {
+    async fn commit_or_abort(self) -> Result<()> {
         let extra = self.extra;
         let state = *self.state;
         if !extra.mutated {
@@ -686,7 +675,7 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         let txn = state.context;
         match client.commit_or_abort(txn).await {
             Ok(_txn_context) => Ok(()),
-            Err(err) => Err(DgraphError::GrpcError(err)),
+            Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),
         }
     }
 }

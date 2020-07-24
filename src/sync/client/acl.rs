@@ -1,3 +1,6 @@
+use anyhow::Result;
+use async_trait::async_trait;
+
 use crate::client::acl::LazyAclClient;
 use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "tls")]
@@ -7,9 +10,6 @@ use crate::sync::client::{ClientVariant, IClient};
 use crate::sync::txn::TxnType as SyncTxn;
 use crate::sync::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType};
 use crate::txn::TxnType;
-use crate::Result;
-use async_trait::async_trait;
-use failure::Error;
 
 ///
 /// Inner state for logged Client
@@ -50,7 +50,7 @@ impl<C: ILazyChannel> IClient for Acl<C> {
         self,
         _user_id: T,
         _password: T,
-    ) -> Result<AsyncAclClient<Self::Channel>, Error> {
+    ) -> Result<AsyncAclClient<Self::Channel>> {
         Ok(self.async_client)
     }
 }
@@ -144,7 +144,7 @@ impl<S: IClient> ClientVariant<S> {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClientType<S::Channel>, Error> {
+    ) -> Result<AclClientType<S::Channel>> {
         let async_client = {
             let mut rt = self.state.rt.lock().expect("Tokio runtime");
             let client = self.extra;
@@ -180,7 +180,7 @@ impl<C: ILazyChannel> AclClientType<C> {
     /// }
     /// ```
     ///
-    pub fn refresh_login(&self) -> Result<(), Error> {
+    pub fn refresh_login(&self) -> Result<()> {
         let mut rt = self.state.rt.lock().expect("Tokio runtime");
         rt.block_on(async { self.extra.async_client.refresh_login().await })
     }
