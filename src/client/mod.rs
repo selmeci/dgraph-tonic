@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
-use anyhow::Result as AnyResult;
+use anyhow::Result;
 use http::Uri;
 use rand::Rng;
 
@@ -54,7 +54,7 @@ pub(crate) fn rnd_item<T: Clone>(items: &[T]) -> T {
 ///
 pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
     endpoints: E,
-) -> AnyResult<Vec<Uri>> {
+) -> Result<Vec<Uri>> {
     let endpoints: Endpoints<U> = endpoints.into();
     let mut balance_list: Vec<Uri> = Vec::new();
     for maybe_endpoint in endpoints.endpoints {
@@ -215,7 +215,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn alter(&self, op: Operation) -> AnyResult<Payload> {
+    pub async fn alter(&self, op: Operation) -> Result<Payload> {
         let mut stub = self.any_stub();
         stub.alter(op).await
     }
@@ -260,7 +260,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn set_schema<S: Into<String>>(&self, schema: S) -> AnyResult<Payload> {
+    pub async fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),
             ..Default::default()
@@ -304,7 +304,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn drop_all(&self) -> AnyResult<Payload> {
+    pub async fn drop_all(&self) -> Result<Payload> {
         let op = Operation {
             drop_all: true,
             ..Default::default()
@@ -333,7 +333,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub async fn check_version(&self) -> AnyResult<Version> {
+    pub async fn check_version(&self) -> Result<Version> {
         let mut stub = self.any_stub();
         stub.check_version().await
     }
