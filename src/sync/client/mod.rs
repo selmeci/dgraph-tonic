@@ -1,18 +1,18 @@
+use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, Mutex};
+
+use anyhow::Result;
+use async_trait::async_trait;
+use lazy_static::lazy_static;
+use tokio::runtime::Runtime;
+
 use crate::api::IDgraphClient;
+use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "acl")]
 use crate::client::AclClientType as AsyncAclClient;
 use crate::client::ILazyClient;
 use crate::stub::Stub;
-use crate::{Operation, Payload, Version};
-use async_trait::async_trait;
-use failure::Error;
-use lazy_static::lazy_static;
-use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime;
-
-use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "acl")]
 pub use crate::sync::client::acl::{
     AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAlcReadOnly,
@@ -28,6 +28,7 @@ pub use crate::sync::client::tls::{
 };
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use crate::txn::TxnType as AsyncTxn;
+use crate::{Operation, Payload, Version};
 
 #[cfg(feature = "acl")]
 mod acl;
@@ -86,7 +87,7 @@ pub trait IClient {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AsyncAclClient<Self::Channel>, Error>;
+    ) -> Result<AsyncAclClient<Self::Channel>>;
 }
 
 ///
@@ -203,7 +204,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub fn alter(&self, op: Operation) -> Result<Payload, Error> {
+    pub fn alter(&self, op: Operation) -> Result<Payload> {
         let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.alter(op).await })
@@ -251,7 +252,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload, Error> {
+    pub fn set_schema<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),
             ..Default::default()
@@ -296,7 +297,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub fn drop_all(&self) -> Result<Payload, Error> {
+    pub fn drop_all(&self) -> Result<Payload> {
         let op = Operation {
             drop_all: true,
             ..Default::default()
@@ -325,7 +326,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    pub fn check_version(&self) -> Result<Version, Error> {
+    pub fn check_version(&self) -> Result<Version> {
         let mut rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.check_version().await })
@@ -334,10 +335,10 @@ impl<C: IClient> ClientVariant<C> {
 
 #[cfg(test)]
 mod tests {
-
-    use super::*;
     #[cfg(feature = "acl")]
     use crate::client::LazyChannel;
+
+    use super::*;
 
     #[cfg(not(feature = "acl"))]
     fn client() -> Client {

@@ -4,17 +4,17 @@ use std::hash::Hash;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
 
+use anyhow::Result;
+use async_trait::async_trait;
+
 use crate::client::ILazyClient;
-use crate::errors::DgraphError;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::TxnBestEffortType;
 pub use crate::txn::default::TxnType;
 pub use crate::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::txn::read_only::TxnReadOnlyType;
-use crate::IDgraphClient;
+use crate::{DgraphError, IDgraphClient};
 use crate::{Request, Response, TxnContext};
-
-use async_trait::async_trait;
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -142,7 +142,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    async fn query<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync;
 
@@ -209,11 +209,7 @@ pub trait Query: Send + Sync {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```
-    async fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
+    async fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -222,7 +218,7 @@ pub trait Query: Send + Sync {
 
 #[async_trait]
 impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
-    async fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    async fn query<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
     {
@@ -230,11 +226,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             .await
     }
 
-    async fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
+    async fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -247,13 +239,11 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
         let request = self.extra.query_request(&self.state, query.into(), vars);
         let response = match self.stub.query(request).await {
             Ok(response) => response,
-            Err(err) => {
-                return Err(DgraphError::GrpcError(err));
-            }
+            Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),
         };
         match response.txn.as_ref() {
             Some(src) => self.context.merge_context(src)?,
-            None => return Err(DgraphError::EmptyTxn),
+            None => anyhow::bail!(DgraphError::EmptyTxn),
         };
         Ok(response)
     }
@@ -261,17 +251,17 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::collections::HashMap;
+    use std::time::Duration;
 
     use serde_derive::{Deserialize, Serialize};
-    use std::time::Duration;
 
     use crate::client::Client;
     #[cfg(feature = "acl")]
     use crate::client::{AclClientType, LazyChannel};
     use crate::{Mutate, Mutation};
+
+    use super::*;
 
     #[cfg(not(feature = "acl"))]
     async fn client() -> Client {

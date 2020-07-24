@@ -1,3 +1,9 @@
+use std::convert::TryInto;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use http::Uri;
+
 use crate::client::lazy::LazyClient;
 #[cfg(feature = "acl")]
 use crate::client::AclClientType;
@@ -5,11 +11,7 @@ use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyChannel}
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
-use crate::{Endpoints, Result};
-use async_trait::async_trait;
-use failure::Error;
-use http::Uri;
-use std::convert::TryInto;
+use crate::Endpoints;
 
 ///
 /// Inner state for default Client
@@ -52,7 +54,7 @@ impl IClient for Default {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClientType<Self::Channel>, Error> {
+    ) -> Result<AclClientType<Self::Channel>> {
         self.async_client.login(user_id, password).await
     }
 }
@@ -108,7 +110,7 @@ impl Client {
     /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self> {
         let extra = Default {
             async_client: AsyncClient::new(endpoints)?,
         };

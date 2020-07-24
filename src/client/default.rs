@@ -1,13 +1,13 @@
+use std::convert::TryInto;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use http::Uri;
+use tonic::transport::Channel;
+
 use crate::client::lazy::{ILazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
-use crate::{
-    Endpoint, Endpoints, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
-};
-use async_trait::async_trait;
-use failure::Error;
-use http::Uri;
-use std::convert::TryInto;
-use tonic::transport::Channel;
+use crate::{Endpoint, Endpoints, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 
 ///
 /// Lazy initialization of gRPC channel
@@ -26,7 +26,7 @@ impl LazyChannel {
 
 #[async_trait]
 impl ILazyChannel for LazyChannel {
-    async fn channel(&mut self) -> Result<Channel, Error> {
+    async fn channel(&mut self) -> Result<Channel> {
         if let Some(channel) = &self.channel {
             Ok(channel.to_owned())
         } else {
@@ -112,7 +112,7 @@ impl Client {
     /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self, Error> {
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self> {
         let extra = Default {
             clients: balance_list(endpoints)?
                 .into_iter()

@@ -1,18 +1,20 @@
+use std::sync::Mutex;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use prost::Message;
+use tonic::codegen::Arc;
+use tonic::metadata::MetadataValue;
+use tonic::transport::Channel;
+use tonic::Request;
+
 use crate::api::dgraph_client::DgraphClient;
 use crate::api::{IDgraphClient, Jwt, LoginRequest};
 use crate::client::lazy::{ILazyChannel, ILazyClient};
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::{LazyChannel, Result, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
-use async_trait::async_trait;
-use failure::Error;
-use prost::Message;
-use std::sync::Mutex;
-use tonic::codegen::Arc;
-use tonic::metadata::MetadataValue;
-use tonic::transport::Channel;
-use tonic::Request;
+use crate::{LazyChannel, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 
 ///
 /// Acl gRPC lazy Dgraph client
@@ -33,7 +35,7 @@ impl<C: ILazyChannel> LazyAclClient<C> {
         }
     }
 
-    async fn init(&mut self) -> Result<(), Error> {
+    async fn init(&mut self) -> Result<()> {
         if self.client.is_none() {
             let channel = self.channel.channel().await?;
             let access_jwt = Arc::clone(&self.access_jwt);
@@ -55,7 +57,7 @@ impl<C: ILazyChannel> LazyAclClient<C> {
 impl<C: ILazyChannel> ILazyClient for LazyAclClient<C> {
     type Channel = C;
 
-    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>, Error> {
+    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>> {
         self.init().await?;
         if let Some(client) = &mut self.client {
             Ok(client)
@@ -184,7 +186,7 @@ impl<S: IClient> ClientVariant<S> {
         self,
         user_id: T,
         password: T,
-    ) -> Result<AclClientType<S::Channel>, Error> {
+    ) -> Result<AclClientType<S::Channel>> {
         let mut stub = self.any_stub();
         let login = LoginRequest {
             userid: user_id.into(),
@@ -238,7 +240,7 @@ impl<C: ILazyChannel> AclClientType<C> {
     /// }
     /// ```
     ///
-    pub async fn refresh_login(&self) -> Result<(), Error> {
+    pub async fn refresh_login(&self) -> Result<()> {
         let mut stub = self.any_stub();
         let refresh_token = (&*self.extra.refresh_jwt.lock().unwrap()).to_owned();
         let login = LoginRequest {

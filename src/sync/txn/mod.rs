@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::ops::{Deref, DerefMut};
+
+use anyhow::Result;
+use async_trait::async_trait;
+
 pub use crate::sync::txn::best_effort::TxnBestEffortType;
 pub use crate::sync::txn::default::TxnType;
 pub use crate::sync::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::sync::txn::read_only::TxnReadOnlyType;
-use crate::{DgraphError, Response, Result};
-use async_trait::async_trait;
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
+use crate::Response;
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -25,11 +28,7 @@ pub struct TxnState {}
 ///
 #[async_trait]
 pub trait IState: Send + Sync + Clone {
-    fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
+    fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -125,7 +124,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    fn query<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync;
 
@@ -194,11 +193,7 @@ pub trait Query: Send + Sync {
     ///     let persons: Persons = resp.try_into().expect("Persons");
     /// }
     /// ```
-    fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
+    fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
@@ -206,18 +201,14 @@ pub trait Query: Send + Sync {
 }
 
 impl<S: IState> Query for TxnVariant<S> {
-    fn query<Q>(&mut self, query: Q) -> Result<Response, DgraphError>
+    fn query<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
     {
         self.query_with_vars(query, HashMap::<String, String, _>::new())
     }
 
-    fn query_with_vars<Q, K, V>(
-        &mut self,
-        query: Q,
-        vars: HashMap<K, V>,
-    ) -> Result<Response, DgraphError>
+    fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,

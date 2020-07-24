@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use crate::client::ILazyClient;
 use crate::stub::Stub;
 use crate::txn::{IState, TxnState, TxnVariant};
 use crate::Request;
-use failure::_core::marker::PhantomData;
 
 ///
 /// Inner state for default transaction
