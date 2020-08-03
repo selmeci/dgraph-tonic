@@ -5,6 +5,7 @@ use std::convert::TryInto;
 /// Helper struct for endpoints input argument in new client function.
 /// Allows to create client with one or more endpoints.
 ///
+#[derive(Debug)]
 pub struct Endpoints<S: TryInto<Uri>> {
     pub(crate) endpoints: Vec<S>,
 }
