@@ -3,7 +3,10 @@ use std::convert::TryInto;
 use anyhow::Result;
 use async_trait::async_trait;
 use http::Uri;
+use std::fmt::Debug;
 use tonic::transport::Channel;
+use tracing::trace;
+use tracing_attributes::instrument;
 
 use crate::client::lazy::{ILazyChannel, LazyClient};
 use crate::client::{balance_list, rnd_item, ClientState, ClientVariant, IClient};
@@ -43,12 +46,12 @@ impl ILazyChannel for LazyChannel {
 ///
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct Default {
+pub struct Http {
     clients: Vec<LazyClient<LazyChannel>>,
 }
 
 #[async_trait]
-impl IClient for Default {
+impl IClient for Http {
     type Client = LazyClient<Self::Channel>;
     type Channel = LazyChannel;
 
@@ -64,7 +67,7 @@ impl IClient for Default {
 ///
 /// Default client.
 ///
-pub type Client = ClientVariant<Default>;
+pub type Client = ClientVariant<Http>;
 
 ///
 /// Txn over http
@@ -112,14 +115,16 @@ impl Client {
     /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self> {
-        let extra = Default {
+    #[instrument]
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>> + Debug>(endpoints: E) -> Result<Self> {
+        let extra = Http {
             clients: balance_list(endpoints)?
                 .into_iter()
                 .map(|uri| LazyClient::new(LazyChannel::new(uri)))
                 .collect(),
         };
         let state = Box::new(ClientState::new());
+        trace!("New http client");
         Ok(Self { state, extra })
     }
 }

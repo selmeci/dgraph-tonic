@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use anyhow::Result;
 use async_trait::async_trait;
 use http::Uri;
+use std::fmt::Debug;
 
 use crate::client::lazy::LazyClient;
 use crate::client::tls::LazyTlsChannel;

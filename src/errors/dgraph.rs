@@ -8,8 +8,8 @@ use thiserror::Error as Fail;
 pub enum Error {
     #[error("Dgraph: Txn start mismatch")]
     StartTsMismatch,
-    #[error("Dgraph: gRPC communication Error")]
-    GrpcError(Failure),
+    #[error("Dgraph: gRPC communication Error.")]
+    GrpcError(#[from] Failure),
     #[error("Dgraph: Txn is empty")]
     EmptyTxn,
     #[error("Dgraph: Missing Txn context")]

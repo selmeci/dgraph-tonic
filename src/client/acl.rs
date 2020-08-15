@@ -1,9 +1,8 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use prost::Message;
-use tonic::codegen::Arc;
 use tonic::metadata::MetadataValue;
 use tonic::transport::Channel;
 use tonic::Request;

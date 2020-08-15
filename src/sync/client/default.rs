@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use anyhow::Result;
 use async_trait::async_trait;
 use http::Uri;
+use std::fmt::Debug;
 
 use crate::client::lazy::LazyClient;
 #[cfg(feature = "acl")]
@@ -110,7 +111,7 @@ impl Client {
     /// let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
     /// ```
     ///
-    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>>>(endpoints: E) -> Result<Self> {
+    pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>> + Debug>(endpoints: E) -> Result<Self> {
         let extra = Default {
             async_client: AsyncClient::new(endpoints)?,
         };
