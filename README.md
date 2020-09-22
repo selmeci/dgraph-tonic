@@ -191,6 +191,7 @@ async fn main() {
   //you can set schema directly with
   client.set_schema_in_background("name: string @index(exact) .").await.expect("Schema is not updated");
 }
+```
 
 `Operation` contains other fields as well, including `DropAttr` and `DropAll`. `DropAll` is useful if you wish to discard all the data, and start from a clean slate, without bringing the instance down. `DropAttr` is used to drop all the data related to a predicate.
 
