@@ -332,6 +332,7 @@ impl<S: IState> Query for TxnVariant<S> {
         self.query_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
     }
 
+    #[cfg(feature = "dgraph-1-1")]
     fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -348,6 +349,7 @@ impl<S: IState> Query for TxnVariant<S> {
         self.extra.query_with_vars(query, vars)
     }
 
+    #[cfg(feature = "dgraph-1-1")]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,

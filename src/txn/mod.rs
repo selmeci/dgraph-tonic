@@ -345,6 +345,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             .await
     }
 
+    #[cfg(feature = "dgraph-1-1")]
     async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -363,12 +364,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             tmp.insert(k.into(), v.into());
             tmp
         });
-        let mut request = self.extra.query_request(&self.state, query.into(), vars);
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "dgraph-1-1")] {
-                request.resp_format = crate::api::request::RespFormat::Json as i32
-            }
-        }
+        let request = self.extra.query_request(&self.state, query.into(), vars);
         let response = match self.stub.query(request).await {
             Ok(response) => response,
             Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),
@@ -380,6 +376,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
         Ok(response)
     }
 
+    #[cfg(feature = "dgraph-1-1")]
     async fn query_rdf_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -395,11 +392,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             tmp
         });
         let mut request = self.extra.query_request(&self.state, query.into(), vars);
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "dgraph-1-1")] {
-                request.resp_format = crate::api::request::RespFormat::Rdf as i32
-            }
-        }
+        request.resp_format = crate::api::request::RespFormat::Rdf as i32;
         let response = match self.stub.query(request).await {
             Ok(response) => response,
             Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),

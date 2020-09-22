@@ -19,7 +19,6 @@ exclude = [
 anyhow = "1.0"
 async-stream = "0.2"
 async-trait = "0.1"
-cfg-if = "0.1"
 futures = "0.3"
 http = "0.2"
 lazy_static = "1.4"
