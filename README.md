@@ -175,6 +175,23 @@ async fn main() {
 }
 ```
 
+Starting Dgraph version 20.03.0, indexes can be computed in the background. You can find more details [here](https://docs.dgraph.io/master/query-language/#indexes-in-background).
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() {
+  let op = Operation {
+    schema: "name: string @index(exact) .".into(),
+    ..Default::default()
+  };
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+  let response = client.alter(op).await.expect("Schema set");
+  //you can set schema directly with
+  client.set_schema_in_background("name: string @index(exact) .").await.expect("Schema is not updated");
+}
+
 `Operation` contains other fields as well, including `DropAttr` and `DropAll`. `DropAll` is useful if you wish to discard all the data, and start from a clean slate, without bringing the instance down. `DropAttr` is used to drop all the data related to a predicate.
 
 If you want to drop all data in DB, you can use:
