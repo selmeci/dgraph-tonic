@@ -60,6 +60,7 @@ impl<C: ILazyClient> IState for Mutated<C> {
         })
     }
 
+    #[cfg(feature = "dgraph-1-1")]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
