@@ -258,9 +258,7 @@ pub struct Jwt {
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs)]
-
     use tonic::codegen::*;
-
     #[doc = " Graph response."]
     pub struct DgraphClient<T> {
         inner: tonic::client::Grpc<T>,

@@ -15,6 +15,26 @@ pub struct Request {
     pub mutations: ::std::vec::Vec<Mutation>,
     #[prost(bool, tag = "13")]
     pub commit_now: bool,
+    #[prost(enumeration = "request::RespFormat", tag = "14")]
+    pub resp_format: i32,
+}
+pub mod request {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum RespFormat {
+        Json = 0,
+        Rdf = 1,
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Uids {
+    #[prost(string, repeated, tag = "1")]
+    pub uids: ::std::vec::Vec<std::string::String>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListOfString {
+    #[prost(string, repeated, tag = "1")]
+    pub value: ::std::vec::Vec<std::string::String>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -24,8 +44,17 @@ pub struct Response {
     pub txn: ::std::option::Option<TxnContext>,
     #[prost(message, optional, tag = "3")]
     pub latency: ::std::option::Option<Latency>,
+    /// Metrics contains all metrics related to the query.
+    #[prost(message, optional, tag = "4")]
+    pub metrics: ::std::option::Option<Metrics>,
+    /// uids contains a mapping of blank_node => uid for the node. It only returns uids
+    /// that were created as part of a mutation.
     #[prost(map = "string, string", tag = "12")]
     pub uids: ::std::collections::HashMap<std::string::String, std::string::String>,
+    #[prost(bytes, tag = "13")]
+    pub rdf: std::vec::Vec<u8>,
+    #[prost(map = "string, message", tag = "14")]
+    pub hdrs: ::std::collections::HashMap<std::string::String, ListOfString>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Mutation {
@@ -62,6 +91,9 @@ pub struct Operation {
     /// type to delete.
     #[prost(string, tag = "5")]
     pub drop_value: std::string::String,
+    /// run indexes in background.
+    #[prost(bool, tag = "6")]
+    pub run_in_background: bool,
 }
 pub mod operation {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -112,6 +144,14 @@ pub struct Latency {
     pub encoding_ns: u64,
     #[prost(uint64, tag = "4")]
     pub assign_timestamp_ns: u64,
+    #[prost(uint64, tag = "5")]
+    pub total_ns: u64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Metrics {
+    /// num_uids is the map of number of uids processed by each attribute.
+    #[prost(map = "string, uint64", tag = "1")]
+    pub num_uids: ::std::collections::HashMap<std::string::String, u64>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NQuad {
@@ -208,9 +248,7 @@ pub struct Jwt {
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs)]
-
     use tonic::codegen::*;
-
     #[doc = " Graph response."]
     pub struct DgraphClient<T> {
         inner: tonic::client::Grpc<T>,

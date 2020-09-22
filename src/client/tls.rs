@@ -39,7 +39,7 @@ impl ILazyChannel for LazyTlsChannel {
         } else {
             let endpoint: Endpoint = self.uri.to_owned().into();
             let channel = endpoint
-                .tls_config(self.tls.as_ref().clone())
+                .tls_config(self.tls.as_ref().clone())?
                 .connect()
                 .await?;
             self.channel.replace(channel.to_owned());

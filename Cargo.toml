@@ -1,6 +1,6 @@
 [package]
 name = "dgraph-tonic"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Selmeci <selmeci.roman@gmail.com>"]
 edition = "2018"
 description = "A rust async/sync client for Dgraph database build with Tonic crate"
@@ -29,7 +29,7 @@ serde_derive = "1.0"
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "0.2", features = ["macros", "rt-core"] }
-tonic = {version = "0.2", features = ["tls"]}
+tonic = {version = "0.3", features = ["tls"]}
 tracing = "0.1"
 tracing-attributes = "0.1"
 tracing-futures = "0.2"
@@ -40,7 +40,7 @@ tonic-build = "0.2"
 
 [features]
 default = ["dgraph-1-1"]
-all = ["acl", "tls", "sync", "experimental"]
+all = ["acl", "default", "tls", "sync", "experimental"]
 acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []

@@ -261,6 +261,58 @@ impl<C: IClient> ClientVariant<C> {
     }
 
     ///
+    /// Create or change the schema in background.
+    ///
+    /// # Arguments
+    ///
+    /// - `schema`: Schema modification
+    ///
+    /// # Errors
+    ///
+    /// * gRPC error
+    /// * DB reject alter command
+    ///
+    /// # Example
+    ///
+    /// Install a schema into dgraph. A `name` predicate is string type and has exact index.
+    ///
+    /// ```
+    /// use dgraph_tonic::Operation;
+    /// use dgraph_tonic::sync::Client;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClientType;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyChannel;
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").expect("Acl client")
+    /// }
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = client();
+    ///     client.set_schema_in_background("name: string @index(exact) .").expect("Schema is not updated");
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    pub fn set_schema_in_background<S: Into<String>>(&self, schema: S) -> Result<Payload> {
+        let op = Operation {
+            schema: schema.into(),
+            run_in_background: true,
+            ..Default::default()
+        };
+        self.alter(op)
+    }
+
+    ///
     /// Drop all data in DB
     ///
     ///
