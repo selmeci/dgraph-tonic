@@ -41,6 +41,20 @@ impl<C: ILazyClient> IState for BestEffort<C> {
             async_txn.query_with_vars(query, vars).await
         })
     }
+
+    fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+    {
+        let mut rt = self.rt.lock().expect("Tokio Runtime");
+        let async_txn = Arc::clone(&self.async_txn);
+        rt.block_on(async move {
+            let mut async_txn = async_txn.lock().expect("Async Txn");
+            async_txn.query_rdf_with_vars(query, vars).await
+        })
+    }
 }
 
 ///

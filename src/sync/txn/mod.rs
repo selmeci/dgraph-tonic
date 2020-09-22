@@ -33,6 +33,12 @@ pub trait IState: Send + Sync + Clone {
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync;
+
+    fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
 }
 
 ///
@@ -129,6 +135,62 @@ pub trait Query: Send + Sync {
         Q: Into<String> + Send + Sync;
 
     ///
+    /// You can run a query with rdf response by calling `txn.query_rdf(q)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::Response;
+    /// use dgraph_tonic::sync::{Query, Client};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClientType;
+    /// use serde::Deserialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyChannel;
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").expect("Acl client")
+    /// }
+    ///
+    /// fn main() {
+    ///     let q = r#"query all($a: string) {
+    ///     all(func: eq(name, "Alice")) {
+    ///       uid
+    ///       name
+    ///     }
+    ///   }"#;
+    ///
+    ///   let client = client();
+    ///   let mut txn = client.new_read_only_txn();
+    ///   let resp: Response = txn.query_rdf(q).expect("Query response");
+    ///   println!("{}",String::from_utf8(resp.rdf).unwrap());
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync;
+
+    ///
     /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
     ///
     /// # Arguments
@@ -198,6 +260,68 @@ pub trait Query: Send + Sync {
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync;
+
+    ///
+    /// You can run a query with defined variables and rdf response by calling `txn.query_rdf_with_vars(q, vars)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    /// * `vars`: map of variables
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::Response;
+    /// use dgraph_tonic::sync::{Query, Client};
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::sync::AclClientType;
+    /// use serde::Deserialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::LazyChannel;
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").expect("Acl client")
+    /// }
+    ///
+    /// fn main() {
+    ///     let q = r#"query all($a: string) {
+    ///         all(func: eq(name, $a)) {
+    ///         uid
+    ///         name
+    ///         }
+    ///     }"#;
+    ///
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$a", "Alice");
+    ///
+    ///     let client = client();
+    ///     let mut txn = client.new_read_only_txn();
+    ///     let resp: Response = txn.query_rdf_with_vars(q, vars).expect("query response");
+    ///     println!("{}",String::from_utf8(resp.rdf).unwrap());
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
 }
 
 impl<S: IState> Query for TxnVariant<S> {
@@ -205,7 +329,14 @@ impl<S: IState> Query for TxnVariant<S> {
     where
         Q: Into<String> + Send + Sync,
     {
-        self.query_with_vars(query, HashMap::<String, String, _>::new())
+        self.query_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
+    }
+
+    fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+    {
+        self.query_rdf_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
     }
 
     fn query_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
@@ -215,6 +346,15 @@ impl<S: IState> Query for TxnVariant<S> {
         V: Into<String> + Send + Sync,
     {
         self.extra.query_with_vars(query, vars)
+    }
+
+    fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+    {
+        self.extra.query_rdf_with_vars(query, vars)
     }
 }
 

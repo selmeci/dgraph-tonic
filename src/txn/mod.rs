@@ -147,6 +147,61 @@ pub trait Query: Send + Sync {
         Q: Into<String> + Send + Sync;
 
     ///
+    /// You can run a query with rdf response by calling `txn.query_rdf(q)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::{Client, Response, Query};
+    /// use serde::Deserialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }
+    ///
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"query all($a: string) {
+    ///     all(func: eq(name, "Alice")) {
+    ///       uid
+    ///       name
+    ///     }
+    ///   }"#;
+    ///
+    ///   let client = client().await;
+    ///   let mut txn = client.new_read_only_txn();
+    ///   let resp: Response = txn.query_rdf(q).await.expect("Query response");
+    ///   println!("{}",String::from_utf8(resp.rdf).unwrap());
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-1-1")]
+    async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync;
+
+    ///
     /// You can run a query with defined variables by calling `txn.query_with_vars(q, vars)`.
     ///
     /// # Arguments
@@ -214,6 +269,70 @@ pub trait Query: Send + Sync {
         Q: Into<String> + Send + Sync,
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync;
+
+    ///
+    /// You can run a query with defined variables and rdf response by calling `txn.query_rdf_with_vars(q, vars)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query`: GraphQL+- query
+    /// * `vars`: map of variables
+    ///
+    /// # Errors
+    ///
+    /// If transaction is not initialized properly, return `EmptyTxn` error.
+    ///
+    /// gRPC errors can be returned also.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use dgraph_tonic::{Client, Response, Query};
+    /// use serde::Deserialize;
+    /// #[cfg(feature = "acl")]
+    /// use dgraph_tonic::{AclClientType, LazyChannel};
+    ///
+    /// #[cfg(not(feature = "acl"))]
+    /// async fn client() -> Client {
+    ///     Client::new("http://127.0.0.1:19080").expect("Dgraph client")
+    /// }
+    ///
+    /// #[cfg(feature = "acl")]
+    /// async fn client() -> AclClientType<LazyChannel> {
+    ///     let default = Client::new("http://127.0.0.1:19080").unwrap();
+    ///     default.login("groot", "password").await.expect("Acl client")
+    /// }
+    ///
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let q = r#"query all($a: string) {
+    ///         all(func: eq(name, $a)) {
+    ///         uid
+    ///         name
+    ///         }
+    ///     }"#;
+    ///
+    ///     let mut vars = HashMap::new();
+    ///     vars.insert("$a", "Alice");
+    ///
+    ///     let client = client().await;
+    ///     let mut txn = client.new_read_only_txn();
+    ///     let resp: Response = txn.query_rdf_with_vars(q, vars).await.expect("query response");
+    ///     println!("{}",String::from_utf8(resp.rdf).unwrap());
+    /// }
+    /// ```
+    #[cfg(feature = "dgraph-1-1")]
+    async fn query_rdf_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync;
 }
 
 #[async_trait]
@@ -222,7 +341,15 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
     where
         Q: Into<String> + Send + Sync,
     {
-        self.query_with_vars(query, HashMap::<String, String, _>::new())
+        self.query_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
+            .await
+    }
+
+    async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+    {
+        self.query_rdf_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
             .await
     }
 
@@ -236,7 +363,43 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             tmp.insert(k.into(), v.into());
             tmp
         });
-        let request = self.extra.query_request(&self.state, query.into(), vars);
+        let mut request = self.extra.query_request(&self.state, query.into(), vars);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "dgraph-1-1")] {
+                request.resp_format = crate::api::request::RespFormat::Json as i32
+            }
+        }
+        let response = match self.stub.query(request).await {
+            Ok(response) => response,
+            Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),
+        };
+        match response.txn.as_ref() {
+            Some(src) => self.context.merge_context(src)?,
+            None => anyhow::bail!(DgraphError::EmptyTxn),
+        };
+        Ok(response)
+    }
+
+    async fn query_rdf_with_vars<Q, K, V>(
+        &mut self,
+        query: Q,
+        vars: HashMap<K, V>,
+    ) -> Result<Response>
+    where
+        Q: Into<String> + Send + Sync,
+        K: Into<String> + Send + Sync + Eq + Hash,
+        V: Into<String> + Send + Sync,
+    {
+        let vars = vars.into_iter().fold(HashMap::new(), |mut tmp, (k, v)| {
+            tmp.insert(k.into(), v.into());
+            tmp
+        });
+        let mut request = self.extra.query_request(&self.state, query.into(), vars);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "dgraph-1-1")] {
+                request.resp_format = crate::api::request::RespFormat::Rdf as i32
+            }
+        }
         let response = match self.stub.query(request).await {
             Ok(response) => response,
             Err(err) => anyhow::bail!(DgraphError::GrpcError(err)),
