@@ -68,6 +68,13 @@ impl<S: IState, C: ILazyClient> DerefMut for TxnVariant<S, C> {
 
 impl<S: IState, C: ILazyClient> TxnVariant<S, C> {
     ///
+    /// Return cloned txn context
+    ///
+    pub fn get_txn_context(&self) -> TxnContext {
+        self.context.clone()
+    }
+
+    ///
     /// Return new transaction of same variant with default state
     ///
     pub fn clone_and_reset(&mut self) -> Self {
