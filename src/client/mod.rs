@@ -21,6 +21,10 @@ pub use crate::client::default::{
 pub use crate::client::endpoints::Endpoints;
 use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
+#[cfg(feature = "slash-ql")]
+pub use crate::client::slash_ql::{
+    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+};
 #[cfg(feature = "tls")]
 pub use crate::client::tls::{
     Tls, TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly,
@@ -36,6 +40,8 @@ pub(crate) mod acl;
 pub(crate) mod default;
 pub(crate) mod endpoints;
 pub(crate) mod lazy;
+#[cfg(feature = "slash-ql")]
+pub(crate) mod slash_ql;
 #[cfg(feature = "tls")]
 pub(crate) mod tls;
 

@@ -7,7 +7,9 @@ use std::fmt::Debug;
 
 use crate::client::lazy::LazyClient;
 use crate::client::tls::LazyTlsChannel;
-use crate::client::{AclClientType, IClient as IAsyncClient, TlsClient as AsyncTlsClient};
+#[cfg(feature = "acl")]
+use crate::client::AclClientType;
+use crate::client::{IClient as IAsyncClient, TlsClient as AsyncTlsClient};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
