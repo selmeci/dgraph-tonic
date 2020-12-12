@@ -22,6 +22,10 @@ pub use crate::sync::client::acl::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
 pub use crate::sync::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
+#[cfg(feature = "slash-ql")]
+pub use crate::sync::client::slash_ql::{
+    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+};
 #[cfg(feature = "tls")]
 pub use crate::sync::client::tls::{
     TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly,
@@ -33,6 +37,8 @@ use crate::{Operation, Payload, Version};
 #[cfg(feature = "acl")]
 mod acl;
 mod default;
+#[cfg(feature = "slash-ql")]
+mod slash_ql;
 #[cfg(feature = "tls")]
 mod tls;
 

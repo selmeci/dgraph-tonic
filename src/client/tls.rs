@@ -97,6 +97,20 @@ pub type TxnTlsBestEffort = TxnBestEffortType<LazyClient<LazyTlsChannel>>;
 pub type TxnTlsMutated = TxnMutatedType<LazyClient<LazyTlsChannel>>;
 
 impl TlsClient {
+    pub(crate) fn init<S: TryInto<Uri>, E: Into<Endpoints<S>>>(
+        endpoints: E,
+        tls: Arc<ClientTlsConfig>,
+    ) -> Result<Self> {
+        let extra = Tls {
+            clients: balance_list(endpoints)?
+                .into_iter()
+                .map(|uri| LazyClient::new(LazyTlsChannel::new(uri, Arc::clone(&tls))))
+                .collect(),
+        };
+        let state = Box::new(ClientState::new());
+        Ok(Self { state, extra })
+    }
+
     ///
     /// Create new Dgraph client authorized with SSL cert for interacting v DB.
     ///
@@ -146,13 +160,6 @@ impl TlsClient {
             .ca_certificate(server_root_ca_cert)
             .identity(client_identity);
         let tls = Arc::new(tls);
-        let extra = Tls {
-            clients: balance_list(endpoints)?
-                .into_iter()
-                .map(|uri| LazyClient::new(LazyTlsChannel::new(uri, Arc::clone(&tls))))
-                .collect(),
-        };
-        let state = Box::new(ClientState::new());
-        Ok(Self { state, extra })
+        Self::init(endpoints, tls)
     }
 }

@@ -19,6 +19,10 @@ pub use crate::client::{
 pub use crate::client::{
     Client, ClientVariant, Http, IClient, Txn, TxnBestEffort, TxnMutated, TxnReadOnly,
 };
+#[cfg(feature = "slash-ql")]
+pub use crate::client::{
+    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+};
 #[cfg(feature = "tls")]
 pub use crate::client::{Tls, TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
 pub use crate::errors::{ClientError, DgraphError};

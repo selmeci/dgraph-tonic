@@ -19,6 +19,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Using a client](#using-a-client)
   - [Create a client](#create-a-client)
   - [Create a TLS client](#create-a-tls-client)
+  - [Create a Slash GraphQL client](#create-a-slash-ql-client)
   - [Create a Sync client](#create-a-sync-client)
   - [Alter the database](#alter-the-database)
   - [Create a transaction](#create-a-transaction)
@@ -65,6 +66,7 @@ Supported features:
 - *all*: enable tls, acl and sync features with dgraph-1-1
 - *dgraph-1-0*: Enable client for Dgraph v1.0.x
 - *dgraph-1-1*: Enable client for Dgraph v1.1.x and v20.0.x
+- *slash-ql*: Enable client for [Slash GraphQL](https://dgraph.io/slash-graphql) service
 - *tls*: Enable secured TlsClient
 - *sync*: Enable synchronous Client
 
@@ -126,6 +128,30 @@ async fn main() {
 ```
 
 All certs must be in `PEM` format.
+
+
+### Create a Slash GraphQL client
+
+If your Slash GraphQL endpoint is `https://app.eu-central-1.aws.cloud.dgraph.io/graphql` than connection endpoint for gRPC client is `http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443`
+
+Client is avaible in `slash-ql` feature:
+
+```toml
+[dependencies]
+dgraph-tonic = { version = "0.8", features = ["slash-ql"] }
+```
+
+```rust
+use dgraph_tonic::TlsClient;
+
+#[tokio::main]
+async fn main() {
+  let client = TlsClient::for_slash_ql(
+    "http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443",
+    "API_KEY")
+  .expect("Slash GraphQL client");
+}
+```
 
 ### Create a Sync client
 
