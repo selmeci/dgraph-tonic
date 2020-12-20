@@ -21,7 +21,7 @@ pub use crate::client::{
 };
 #[cfg(feature = "slash-ql")]
 pub use crate::client::{
-    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+    SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
 };
 #[cfg(feature = "tls")]
 pub use crate::client::{Tls, TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};

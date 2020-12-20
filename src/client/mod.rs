@@ -23,7 +23,7 @@ use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
 #[cfg(feature = "slash-ql")]
 pub use crate::client::slash_ql::{
-    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+    SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
 };
 #[cfg(feature = "tls")]
 pub use crate::client::tls::{

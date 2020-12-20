@@ -24,7 +24,7 @@ pub use crate::sync::client::acl::{
 pub use crate::sync::client::default::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
 #[cfg(feature = "slash-ql")]
 pub use crate::sync::client::slash_ql::{
-    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+    SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
 };
 #[cfg(feature = "tls")]
 pub use crate::sync::client::tls::{

@@ -9,7 +9,7 @@ pub use crate::sync::client::{
 pub use crate::sync::client::{Client, Txn, TxnBestEffort, TxnMutated, TxnReadOnly};
 #[cfg(feature = "slash-ql")]
 pub use crate::sync::client::{
-    SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+    SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
 };
 #[cfg(feature = "tls")]
 pub use crate::sync::client::{TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};

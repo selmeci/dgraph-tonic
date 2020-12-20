@@ -19,7 +19,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 - [Using a client](#using-a-client)
   - [Create a client](#create-a-client)
   - [Create a TLS client](#create-a-tls-client)
-  - [Create a Slash GraphQL client](#create-a-slash-ql-client)
+  - [Create a Slash GraphQL client](#create-a-slash-graphql-client)
   - [Create a Sync client](#create-a-sync-client)
   - [Alter the database](#alter-the-database)
   - [Create a transaction](#create-a-transaction)
