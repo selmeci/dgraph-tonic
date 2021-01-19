@@ -30,7 +30,6 @@ pub struct SlashQl {
 impl IClient for SlashQl {
     type AsyncClient = AsyncSlashQlClient;
     type Client = LazySlashQlClient;
-    #[cfg(feature = "acl")]
     type Channel = LazyTlsChannel;
 
     fn client(&self) -> Self::Client {
