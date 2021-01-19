@@ -24,7 +24,7 @@ http = "0.2"
 lazy_static = "1.4"
 prost = "0.7"
 rand = "0.7"
-rustls = {version = "0.18", features = ["dangerous_configuration"], optional = true}
+tokio-rustls = {version = "0.22", features = ["dangerous_configuration"], optional = true}
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -46,7 +46,7 @@ all = ["acl", "default", "tls", "sync", "experimental", "slash-ql"]
 acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []
-slash-ql = ["tls","rustls","webpki"]
+slash-ql = ["tls","tokio-rustls","webpki"]
 sync = []
 tls = []
 experimental = []

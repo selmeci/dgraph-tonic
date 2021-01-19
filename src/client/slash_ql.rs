@@ -12,10 +12,10 @@ use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, IClient};
 use crate::{Endpoints, TlsClient, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use http::Uri;
-use rustls::{
+use std::convert::TryInto;
+use tokio_rustls::rustls::{
     Certificate as RustCertificate, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError,
 };
-use std::convert::TryInto;
 use webpki::DNSNameRef;
 
 const ALPN_H2: &str = "h2";
@@ -175,7 +175,7 @@ impl TlsClient {
         endpoints: E,
         api_key: T,
     ) -> Result<SlashQlClient> {
-        let mut config = rustls::ClientConfig::new();
+        let mut config = tokio_rustls::rustls::ClientConfig::new();
         config.set_protocols(&[Vec::from(&ALPN_H2[..])]);
         config
             .dangerous()
