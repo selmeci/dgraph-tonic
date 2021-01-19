@@ -52,7 +52,7 @@ impl<C: ILazyClient> IState for Mutated<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let mut rt = self.rt.lock().expect("Tokio Runtime");
+        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
@@ -67,7 +67,7 @@ impl<C: ILazyClient> IState for Mutated<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let mut rt = self.rt.lock().expect("Tokio Runtime");
+        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
@@ -539,7 +539,7 @@ pub trait Mutate: Query {
 
 impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     fn discard(self) -> Result<()> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
@@ -548,7 +548,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     }
 
     fn commit(self) -> Result<()> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
@@ -557,7 +557,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     }
 
     fn mutate(&mut self, mu: Mutation) -> Result<MutationResponse> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("MutatedTxn");
@@ -566,7 +566,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
     }
 
     fn mutate_and_commit_now(self, mu: Mutation) -> Result<MutationResponse> {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
@@ -580,7 +580,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
     {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("MutatedTxn");
@@ -594,7 +594,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         Q: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
     {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
@@ -615,7 +615,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         V: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
     {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.extra.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("MutatedTxn");
@@ -636,7 +636,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         V: Into<String> + Send + Sync,
         M: Into<UpsertMutation> + Send + Sync,
     {
-        let mut rt = self.extra.rt.lock().expect("Tokio Runtime");
+        let rt = self.extra.rt.lock().expect("Tokio Runtime");
         let async_txn = self.extra.async_txn;
         rt.block_on(async move {
             let async_txn = async_txn.lock().expect("MutatedTxn").to_owned();
