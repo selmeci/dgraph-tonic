@@ -18,7 +18,7 @@ use crate::{Query, Response};
 ///
 #[derive(Clone, Debug)]
 pub struct Base<C: ILazyClient> {
-    pub(crate) rt: Arc<Mutex<Runtime>>,
+    pub(crate) rt: Arc<Runtime>,
     pub(crate) async_txn: Arc<Mutex<AsyncTxn<C>>>,
 }
 
@@ -34,9 +34,8 @@ impl<C: ILazyClient> IState for Base<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
-        rt.block_on(async move {
+        self.rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
             async_txn.query_with_vars(query, vars).await
         })
@@ -49,9 +48,8 @@ impl<C: ILazyClient> IState for Base<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
-        rt.block_on(async move {
+        self.rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
             async_txn.query_rdf_with_vars(query, vars).await
         })
@@ -67,7 +65,7 @@ impl<C: ILazyClient> TxnType<C> {
     ///
     /// Create new default transaction which can do query operations.
     ///
-    pub fn new(rt: Arc<Mutex<Runtime>>, async_txn: AsyncTxn<C>) -> TxnType<C> {
+    pub fn new(rt: Arc<Runtime>, async_txn: AsyncTxn<C>) -> TxnType<C> {
         Self {
             state: Box::new(TxnState {}),
             extra: Base {

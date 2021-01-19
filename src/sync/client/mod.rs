@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -43,8 +43,7 @@ mod slash_ql;
 mod tls;
 
 lazy_static! {
-    static ref RT: Arc<Mutex<Runtime>> =
-        Arc::new(Mutex::new(Runtime::new().expect("Tokio runtime")));
+    static ref RT: Arc<Runtime> = Arc::new(Runtime::new().expect("Tokio runtime"));
 }
 
 ///
@@ -52,7 +51,7 @@ lazy_static! {
 ///
 #[derive(Debug)]
 pub struct ClientState {
-    rt: Arc<Mutex<Runtime>>,
+    rt: Arc<Runtime>,
 }
 
 impl ClientState {
@@ -211,9 +210,8 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     ///
     pub fn alter(&self, op: Operation) -> Result<Payload> {
-        let rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
-        rt.block_on(async move { stub.alter(op).await })
+        self.rt.block_on(async move { stub.alter(op).await })
     }
 
     ///
@@ -385,9 +383,8 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     ///
     pub fn check_version(&self) -> Result<Version> {
-        let rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
-        rt.block_on(async move { stub.check_version().await })
+        self.rt.block_on(async move { stub.check_version().await })
     }
 }
 

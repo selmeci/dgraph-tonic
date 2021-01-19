@@ -18,7 +18,7 @@ use crate::{Query, Response};
 ///
 #[derive(Clone, Debug)]
 pub struct ReadOnly<C: ILazyClient> {
-    pub(crate) rt: Arc<Mutex<Runtime>>,
+    pub(crate) rt: Arc<Runtime>,
     pub(crate) async_txn: Arc<Mutex<AsyncReadOnlyTxn<C>>>,
 }
 
@@ -34,9 +34,8 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
-        rt.block_on(async move {
+        self.rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
             async_txn.query_with_vars(query, vars).await
         })
@@ -49,9 +48,8 @@ impl<C: ILazyClient> IState for ReadOnly<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
-        rt.block_on(async move {
+        self.rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
             async_txn.query_rdf_with_vars(query, vars).await
         })

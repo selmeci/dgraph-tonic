@@ -146,9 +146,10 @@ impl<S: IClient> ClientVariant<S> {
         password: T,
     ) -> Result<AclClientType<S::Channel>> {
         let async_client = {
-            let mut rt = self.state.rt.lock().expect("Tokio runtime");
             let client = self.extra;
-            rt.block_on(async move { client.login(user_id, password).await })?
+            self.state
+                .rt
+                .block_on(async move { client.login(user_id, password).await })?
         };
         Ok(AclClientType {
             state: self.state,
@@ -181,8 +182,9 @@ impl<C: ILazyChannel> AclClientType<C> {
     /// ```
     ///
     pub fn refresh_login(&self) -> Result<()> {
-        let mut rt = self.state.rt.lock().expect("Tokio runtime");
-        rt.block_on(async { self.extra.async_client.refresh_login().await })
+        self.state
+            .rt
+            .block_on(async { self.extra.async_client.refresh_login().await })
     }
 }
 
