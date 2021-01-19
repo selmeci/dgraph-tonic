@@ -41,7 +41,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph-tonic = "0.8"
+dgraph-tonic = "0.9"
 ```
 
 Default feature is `dgraph-1-1`.
