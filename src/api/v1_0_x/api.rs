@@ -1,14 +1,15 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(string, tag = "1")]
-    pub query: std::string::String,
+    pub query: ::prost::alloc::string::String,
     /// Support for GraphQL like variables.
     #[prost(map = "string, string", tag = "2")]
-    pub vars: ::std::collections::HashMap<std::string::String, std::string::String>,
+    pub vars:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
     #[prost(uint64, tag = "13")]
     pub start_ts: u64,
     #[prost(message, optional, tag = "14")]
-    pub lin_read: ::std::option::Option<LinRead>,
+    pub lin_read: ::core::option::Option<LinRead>,
     #[prost(bool, tag = "15")]
     pub read_only: bool,
     #[prost(bool, tag = "16")]
@@ -16,42 +17,44 @@ pub struct Request {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(bytes, tag = "1")]
-    pub json: std::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "1")]
+    pub json: ::prost::alloc::vec::Vec<u8>,
+    #[deprecated]
     #[prost(message, repeated, tag = "2")]
-    pub schema: ::std::vec::Vec<SchemaNode>,
+    pub schema: ::prost::alloc::vec::Vec<SchemaNode>,
     #[prost(message, optional, tag = "3")]
-    pub txn: ::std::option::Option<TxnContext>,
+    pub txn: ::core::option::Option<TxnContext>,
     #[prost(message, optional, tag = "12")]
-    pub latency: ::std::option::Option<Latency>,
+    pub latency: ::core::option::Option<Latency>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Assigned {
     #[prost(map = "string, string", tag = "1")]
-    pub uids: ::std::collections::HashMap<std::string::String, std::string::String>,
+    pub uids:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
     #[prost(message, optional, tag = "2")]
-    pub context: ::std::option::Option<TxnContext>,
+    pub context: ::core::option::Option<TxnContext>,
     #[prost(message, optional, tag = "12")]
-    pub latency: ::std::option::Option<Latency>,
+    pub latency: ::core::option::Option<Latency>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Mutation {
-    #[prost(bytes, tag = "1")]
-    pub set_json: std::vec::Vec<u8>,
-    #[prost(bytes, tag = "2")]
-    pub delete_json: std::vec::Vec<u8>,
-    #[prost(bytes, tag = "3")]
-    pub set_nquads: std::vec::Vec<u8>,
-    #[prost(bytes, tag = "4")]
-    pub del_nquads: std::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "1")]
+    pub set_json: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub delete_json: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub set_nquads: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
+    pub del_nquads: ::prost::alloc::vec::Vec<u8>,
     #[prost(string, tag = "5")]
-    pub query: std::string::String,
+    pub query: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
-    pub cond: std::string::String,
+    pub cond: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "10")]
-    pub set: ::std::vec::Vec<NQuad>,
+    pub set: ::prost::alloc::vec::Vec<NQuad>,
     #[prost(message, repeated, tag = "11")]
-    pub del: ::std::vec::Vec<NQuad>,
+    pub del: ::prost::alloc::vec::Vec<NQuad>,
     #[prost(uint64, tag = "13")]
     pub start_ts: u64,
     #[prost(bool, tag = "14")]
@@ -63,9 +66,9 @@ pub struct Mutation {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Operation {
     #[prost(string, tag = "1")]
-    pub schema: std::string::String,
+    pub schema: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub drop_attr: std::string::String,
+    pub drop_attr: ::prost::alloc::string::String,
     #[prost(bool, tag = "3")]
     pub drop_all: bool,
     #[prost(enumeration = "operation::DropOp", tag = "4")]
@@ -73,8 +76,9 @@ pub struct Operation {
     /// If drop_op is ATTR or TYPE, drop_value holds the name of the predicate or
     /// type to delete.
     #[prost(string, tag = "5")]
-    pub drop_value: std::string::String,
+    pub drop_value: ::prost::alloc::string::String,
 }
+/// Nested message and enum types in `Operation`.
 pub mod operation {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -89,8 +93,8 @@ pub mod operation {
 /// Worker services.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Payload {
-    #[prost(bytes, tag = "1")]
-    pub data: std::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxnContext {
@@ -102,19 +106,19 @@ pub struct TxnContext {
     pub aborted: bool,
     /// List of keys to be used for conflict detection.
     #[prost(string, repeated, tag = "4")]
-    pub keys: ::std::vec::Vec<std::string::String>,
+    pub keys: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// List of predicates involved in this transaction.
     #[prost(string, repeated, tag = "5")]
-    pub preds: ::std::vec::Vec<std::string::String>,
+    pub preds: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     #[prost(message, optional, tag = "13")]
-    pub lin_read: ::std::option::Option<LinRead>,
+    pub lin_read: ::core::option::Option<LinRead>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Check {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(string, tag = "1")]
-    pub tag: std::string::String,
+    pub tag: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinRead {
@@ -123,6 +127,7 @@ pub struct LinRead {
     #[prost(enumeration = "lin_read::Sequencing", tag = "2")]
     pub sequencing: i32,
 }
+/// Nested message and enum types in `LinRead`.
 pub mod lin_read {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -145,49 +150,50 @@ pub struct Latency {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NQuad {
     #[prost(string, tag = "1")]
-    pub subject: std::string::String,
+    pub subject: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub predicate: std::string::String,
+    pub predicate: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub object_id: std::string::String,
+    pub object_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub object_value: ::std::option::Option<Value>,
+    pub object_value: ::core::option::Option<Value>,
     #[prost(string, tag = "5")]
-    pub label: std::string::String,
+    pub label: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
-    pub lang: std::string::String,
+    pub lang: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "7")]
-    pub facets: ::std::vec::Vec<Facet>,
+    pub facets: ::prost::alloc::vec::Vec<Facet>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
     #[prost(oneof = "value::Val", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
-    pub val: ::std::option::Option<value::Val>,
+    pub val: ::core::option::Option<value::Val>,
 }
+/// Nested message and enum types in `Value`.
 pub mod value {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Val {
         #[prost(string, tag = "1")]
-        DefaultVal(std::string::String),
+        DefaultVal(::prost::alloc::string::String),
         #[prost(bytes, tag = "2")]
-        BytesVal(std::vec::Vec<u8>),
+        BytesVal(::prost::alloc::vec::Vec<u8>),
         #[prost(int64, tag = "3")]
         IntVal(i64),
         #[prost(bool, tag = "4")]
         BoolVal(bool),
         #[prost(string, tag = "5")]
-        StrVal(std::string::String),
+        StrVal(::prost::alloc::string::String),
         #[prost(double, tag = "6")]
         DoubleVal(f64),
         /// Geo data in WKB format
         #[prost(bytes, tag = "7")]
-        GeoVal(std::vec::Vec<u8>),
+        GeoVal(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "8")]
-        DateVal(std::vec::Vec<u8>),
+        DateVal(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "9")]
-        DatetimeVal(std::vec::Vec<u8>),
+        DatetimeVal(::prost::alloc::vec::Vec<u8>),
         #[prost(string, tag = "10")]
-        PasswordVal(std::string::String),
+        PasswordVal(::prost::alloc::string::String),
         #[prost(uint64, tag = "11")]
         UidVal(u64),
     }
@@ -195,18 +201,19 @@ pub mod value {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Facet {
     #[prost(string, tag = "1")]
-    pub key: std::string::String,
-    #[prost(bytes, tag = "2")]
-    pub value: std::vec::Vec<u8>,
+    pub key: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(enumeration = "facet::ValType", tag = "3")]
     pub val_type: i32,
     /// tokens of value.
     #[prost(string, repeated, tag = "4")]
-    pub tokens: ::std::vec::Vec<std::string::String>,
+    pub tokens: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// not stored, only used for query.
     #[prost(string, tag = "5")]
-    pub alias: std::string::String,
+    pub alias: ::prost::alloc::string::String,
 }
+/// Nested message and enum types in `Facet`.
 pub mod facet {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -221,13 +228,13 @@ pub mod facet {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaNode {
     #[prost(string, tag = "1")]
-    pub predicate: std::string::String,
+    pub predicate: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub r#type: std::string::String,
+    pub r#type: ::prost::alloc::string::String,
     #[prost(bool, tag = "3")]
     pub index: bool,
     #[prost(string, repeated, tag = "4")]
-    pub tokenizer: ::std::vec::Vec<std::string::String>,
+    pub tokenizer: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     #[prost(bool, tag = "5")]
     pub reverse: bool,
     #[prost(bool, tag = "6")]
@@ -242,18 +249,18 @@ pub struct SchemaNode {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
     #[prost(string, tag = "1")]
-    pub userid: std::string::String,
+    pub userid: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub password: std::string::String,
+    pub password: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub refresh_token: std::string::String,
+    pub refresh_token: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Jwt {
     #[prost(string, tag = "1")]
-    pub access_jwt: std::string::String,
+    pub access_jwt: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub refresh_jwt: std::string::String,
+    pub refresh_jwt: ::prost::alloc::string::String,
 }
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {

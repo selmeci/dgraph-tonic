@@ -34,7 +34,7 @@ impl<C: ILazyClient> IState for BestEffort<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let mut rt = self.rt.lock().expect("Tokio Runtime");
+        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");
@@ -49,7 +49,7 @@ impl<C: ILazyClient> IState for BestEffort<C> {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync,
     {
-        let mut rt = self.rt.lock().expect("Tokio Runtime");
+        let rt = self.rt.lock().expect("Tokio Runtime");
         let async_txn = Arc::clone(&self.async_txn);
         rt.block_on(async move {
             let mut async_txn = async_txn.lock().expect("Async Txn");

@@ -211,7 +211,7 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     ///
     pub fn alter(&self, op: Operation) -> Result<Payload> {
-        let mut rt = self.rt.lock().expect("Tokio runtime");
+        let rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.alter(op).await })
     }
@@ -385,7 +385,7 @@ impl<C: IClient> ClientVariant<C> {
     /// ```
     ///
     pub fn check_version(&self) -> Result<Version> {
-        let mut rt = self.rt.lock().expect("Tokio runtime");
+        let rt = self.rt.lock().expect("Tokio runtime");
         let mut stub = self.any_stub();
         rt.block_on(async move { stub.check_version().await })
     }
