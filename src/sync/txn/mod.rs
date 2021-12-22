@@ -5,11 +5,11 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use async_trait::async_trait;
 
+use crate::Response;
 pub use crate::sync::txn::best_effort::TxnBestEffortType;
 pub use crate::sync::txn::default::TxnType;
 pub use crate::sync::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::sync::txn::read_only::TxnReadOnlyType;
-use crate::Response;
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -34,7 +34,7 @@ pub trait IState: Send + Sync + Clone {
         K: Into<String> + Send + Sync + Eq + Hash,
         V: Into<String> + Send + Sync;
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -186,7 +186,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync;
@@ -317,7 +317,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -333,7 +333,7 @@ impl<S: IState> Query for TxnVariant<S> {
         self.query_with_vars(query, HashMap::<String, String, _>::with_capacity(0))
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -350,7 +350,7 @@ impl<S: IState> Query for TxnVariant<S> {
         self.extra.query_with_vars(query, vars)
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -369,11 +369,11 @@ mod tests {
 
     #[cfg(feature = "acl")]
     use crate::client::LazyChannel;
+    use crate::Mutation;
+    use crate::sync::{Mutate, Query};
     #[cfg(feature = "acl")]
     use crate::sync::client::AclClientType;
     use crate::sync::client::Client;
-    use crate::sync::{Mutate, Query};
-    use crate::Mutation;
 
     #[cfg(not(feature = "acl"))]
     fn client() -> Client {
@@ -457,7 +457,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn upsert() {
         let client = client();
         let mut txn = client.new_mutated_txn();
@@ -495,7 +495,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn upsert_and_commit_now() {
         let client = client();
         let mut txn = client.new_mutated_txn();
@@ -533,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn upsert_with_vars() {
         let client = client();
         let mut txn = client.new_mutated_txn();
@@ -573,7 +573,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn upsert_with_vars_and_commit_now() {
         let client = client();
         let mut txn = client.new_mutated_txn();

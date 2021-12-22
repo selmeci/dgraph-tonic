@@ -6,6 +6,9 @@ use anyhow::Result;
 use http::Uri;
 use rand::Rng;
 
+use crate::{
+    IDgraphClient, Operation, Payload, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+};
 use crate::api::Version;
 #[cfg(feature = "acl")]
 pub use crate::client::acl::{
@@ -31,9 +34,6 @@ pub use crate::client::tls::{
 };
 use crate::errors::ClientError;
 use crate::stub::Stub;
-use crate::{
-    IDgraphClient, Operation, Payload, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
-};
 
 #[cfg(feature = "acl")]
 pub(crate) mod acl;
@@ -50,7 +50,7 @@ pub(crate) mod tls;
 ///
 pub(crate) fn rnd_item<T: Clone>(items: &[T]) -> T {
     let mut rng = rand::thread_rng();
-    let i = rng.gen_range(0, items.len());
+    let i = rng.gen_range(0..items.len());
     if let Some(item) = items.get(i) {
         item.to_owned()
     } else {
@@ -317,7 +317,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     pub async fn set_schema_in_background<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),

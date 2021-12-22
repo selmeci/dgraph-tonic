@@ -1,16 +1,15 @@
-pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 pub use tonic::Status;
+pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 
-#[cfg(feature = "dgraph-1-0")]
-pub use crate::api::Assigned;
-use crate::api::IDgraphClient;
-#[cfg(feature = "dgraph-1-1")]
-pub use crate::api::Metrics;
 pub use crate::api::{
     Check, Latency, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext,
     Version,
 };
-pub use crate::client::Endpoints;
+#[cfg(feature = "dgraph-1-0")]
+pub use crate::api::Assigned;
+use crate::api::IDgraphClient;
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
+pub use crate::api::Metrics;
 #[cfg(feature = "acl")]
 pub use crate::client::{
     AclClient, AclClientType, LazyChannel, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
@@ -28,6 +27,7 @@ pub use crate::client::{
 };
 #[cfg(feature = "tls")]
 pub use crate::client::{Tls, TlsClient, TxnTls, TxnTlsBestEffort, TxnTlsMutated, TxnTlsReadOnly};
+pub use crate::client::Endpoints;
 pub use crate::errors::{ClientError, DgraphError};
 pub use crate::txn::{
     Mutate, MutationResponse, Query, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnState,

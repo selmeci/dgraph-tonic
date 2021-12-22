@@ -7,11 +7,12 @@ use async_trait::async_trait;
 use lazy_static::lazy_static;
 use tokio::runtime::Runtime;
 
+use crate::{Operation, Payload, Version};
 use crate::api::IDgraphClient;
-use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "acl")]
 use crate::client::AclClientType as AsyncAclClient;
 use crate::client::ILazyClient;
+use crate::client::lazy::ILazyChannel;
 use crate::stub::Stub;
 #[cfg(feature = "acl")]
 pub use crate::sync::client::acl::{
@@ -32,7 +33,6 @@ pub use crate::sync::client::tls::{
 };
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use crate::txn::TxnType as AsyncTxn;
-use crate::{Operation, Payload, Version};
 
 #[cfg(feature = "acl")]
 mod acl;
@@ -306,7 +306,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     pub fn set_schema_in_background<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),

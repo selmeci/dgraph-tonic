@@ -4,13 +4,13 @@ use tonic::Request;
 use tracing::trace;
 use tracing_attributes::instrument;
 
-use crate::client::ILazyClient;
 #[cfg(feature = "dgraph-1-0")]
 use crate::{Assigned, Mutation};
 use crate::{
     Check, ClientError, IDgraphClient, LoginRequest, Operation, Payload, Request as DgraphRequest,
     Response as DgraphResponse, TxnContext, Version,
 };
+use crate::client::ILazyClient;
 
 ///
 /// Hold channel connection do Dgraph and implement calls for Dgraph API operations.
@@ -63,7 +63,7 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
     }
 
     #[instrument(skip(self))]
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn do_request(&mut self, req: DgraphRequest) -> Result<DgraphResponse> {
         trace!("do_request");
         let request = Request::new(req);

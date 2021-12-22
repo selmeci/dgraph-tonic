@@ -41,12 +41,13 @@ tonic-build = "0.6"
 
 
 [features]
-default = ["dgraph-1-1"]
+default = ["dgraph-21-03"]
 all = ["acl", "default", "tls", "sync", "experimental", "slash-ql"]
 acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []
-slash-ql = ["tls","tokio-rustls","webpki"]
+dgraph-21-03 = []
+slash-ql = ["tls", "tokio-rustls", "webpki"]
 sync = []
 tls = []
 experimental = []

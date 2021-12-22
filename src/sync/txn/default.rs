@@ -8,10 +8,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::runtime::Runtime;
 
+use crate::{Query, Response};
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnState, TxnVariant};
 use crate::txn::TxnType as AsyncTxn;
-use crate::{Query, Response};
 
 ///
 /// Inner state for default transaction
@@ -41,7 +41,7 @@ impl<C: ILazyClient> IState for Base<C> {
         })
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     fn query_rdf_with_vars<Q, K, V>(&mut self, query: Q, vars: HashMap<K, V>) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,

@@ -7,7 +7,7 @@ pub struct Request {
     /// Support for GraphQL like variables.
     #[prost(map = "string, string", tag = "5")]
     pub vars:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
     #[prost(bool, tag = "6")]
     pub read_only: bool,
     #[prost(bool, tag = "7")]
@@ -19,6 +19,7 @@ pub struct Request {
     #[prost(enumeration = "request::RespFormat", tag = "14")]
     pub resp_format: i32,
 }
+
 /// Nested message and enum types in `Request`.
 pub mod request {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -28,16 +29,19 @@ pub mod request {
         Rdf = 1,
     }
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Uids {
     #[prost(string, repeated, tag = "1")]
     pub uids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListOfString {
     #[prost(string, repeated, tag = "1")]
     pub value: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
     #[prost(bytes = "vec", tag = "1")]
@@ -53,12 +57,13 @@ pub struct Response {
     /// that were created as part of a mutation.
     #[prost(map = "string, string", tag = "12")]
     pub uids:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
     #[prost(bytes = "vec", tag = "13")]
     pub rdf: ::prost::alloc::vec::Vec<u8>,
     #[prost(map = "string, message", tag = "14")]
     pub hdrs: ::std::collections::HashMap<::prost::alloc::string::String, ListOfString>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Mutation {
     #[prost(bytes = "vec", tag = "1")]
@@ -80,6 +85,7 @@ pub struct Mutation {
     #[prost(bool, tag = "14")]
     pub commit_now: bool,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Operation {
     #[prost(string, tag = "1")]
@@ -98,6 +104,7 @@ pub struct Operation {
     #[prost(bool, tag = "6")]
     pub run_in_background: bool,
 }
+
 /// Nested message and enum types in `Operation`.
 pub mod operation {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -110,12 +117,14 @@ pub mod operation {
         Type = 4,
     }
 }
+
 /// Worker services.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Payload {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxnContext {
     #[prost(uint64, tag = "1")]
@@ -131,13 +140,16 @@ pub struct TxnContext {
     #[prost(string, repeated, tag = "5")]
     pub preds: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Check {}
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(string, tag = "1")]
     pub tag: ::prost::alloc::string::String,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Latency {
     #[prost(uint64, tag = "1")]
@@ -151,12 +163,14 @@ pub struct Latency {
     #[prost(uint64, tag = "5")]
     pub total_ns: u64,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Metrics {
     /// num_uids is the map of number of uids processed by each attribute.
     #[prost(map = "string, uint64", tag = "1")]
     pub num_uids: ::std::collections::HashMap<::prost::alloc::string::String, u64>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NQuad {
     #[prost(string, tag = "1")]
@@ -174,11 +188,13 @@ pub struct NQuad {
     #[prost(message, repeated, tag = "7")]
     pub facets: ::prost::alloc::vec::Vec<Facet>,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
     #[prost(oneof = "value::Val", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
     pub val: ::core::option::Option<value::Val>,
 }
+
 /// Nested message and enum types in `Value`.
 pub mod value {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -208,6 +224,7 @@ pub mod value {
         UidVal(u64),
     }
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Facet {
     #[prost(string, tag = "1")]
@@ -223,6 +240,7 @@ pub struct Facet {
     #[prost(string, tag = "5")]
     pub alias: ::prost::alloc::string::String,
 }
+
 /// Nested message and enum types in `Facet`.
 pub mod facet {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -235,6 +253,7 @@ pub mod facet {
         Datetime = 4,
     }
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
     #[prost(string, tag = "1")]
@@ -244,6 +263,7 @@ pub struct LoginRequest {
     #[prost(string, tag = "3")]
     pub refresh_token: ::prost::alloc::string::String,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Jwt {
     #[prost(string, tag = "1")]
@@ -251,6 +271,7 @@ pub struct Jwt {
     #[prost(string, tag = "2")]
     pub refresh_jwt: ::prost::alloc::string::String,
 }
+
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -266,14 +287,15 @@ pub mod dgraph_client {
     impl DgraphClient<tonic::transport::Channel> {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
-        where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
-            D::Error: Into<StdError>,
+            where
+                D: std::convert::TryInto<tonic::transport::Endpoint>,
+                D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
             Ok(Self::new(conn))
         }
     }
+
     impl<T> DgraphClient<T>
         where
             T: tonic::client::GrpcService<tonic::body::BoxBody>,

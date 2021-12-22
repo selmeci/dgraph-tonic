@@ -7,14 +7,14 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use async_trait::async_trait;
 
+use crate::{DgraphError, IDgraphClient};
+use crate::{Request, Response, TxnContext};
 use crate::client::ILazyClient;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::TxnBestEffortType;
 pub use crate::txn::default::TxnType;
 pub use crate::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::txn::read_only::TxnReadOnlyType;
-use crate::{DgraphError, IDgraphClient};
-use crate::{Request, Response, TxnContext};
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -203,7 +203,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync;
@@ -330,7 +330,7 @@ pub trait Query: Send + Sync {
     ///     println!("{}",String::from_utf8(resp.rdf).unwrap());
     /// }
     /// ```
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -352,7 +352,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             .await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -383,7 +383,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
         Ok(response)
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -419,10 +419,10 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::client::Client;
+    use crate::{Mutate, Mutation};
     #[cfg(feature = "acl")]
     use crate::client::{AclClientType, LazyChannel};
-    use crate::{Mutate, Mutation};
+    use crate::client::Client;
 
     use super::*;
 
@@ -507,7 +507,7 @@ mod tests {
         assert!(commit.is_ok())
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert() {
         let client = client().await;
@@ -549,7 +549,7 @@ mod tests {
         assert!(txn.commit().await.is_ok());
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_and_commit_now() {
         let client = client().await;
@@ -591,7 +591,7 @@ mod tests {
         assert!(response.is_ok())
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_with_vars() {
         let client = client().await;
@@ -635,7 +635,7 @@ mod tests {
         assert!(txn.commit().await.is_ok());
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_with_vars_and_commit_now() {
         let client = client().await;

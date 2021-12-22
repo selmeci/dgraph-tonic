@@ -6,16 +6,16 @@ use std::hash::Hash;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::client::ILazyClient;
-use crate::errors::DgraphError;
-use crate::txn::default::Base;
-use crate::txn::{IState, Query, TxnState, TxnType, TxnVariant};
+use crate::{Mutation, Request};
 #[cfg(feature = "dgraph-1-0")]
 use crate::Assigned;
+use crate::client::ILazyClient;
+use crate::errors::DgraphError;
 use crate::IDgraphClient;
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 use crate::Response;
-use crate::{Mutation, Request};
+use crate::txn::{IState, Query, TxnState, TxnType, TxnVariant};
+use crate::txn::default::Base;
 
 ///
 /// In Dgraph v1.0.x is mutation response represented as Assigned object
@@ -25,7 +25,7 @@ pub type MutationResponse = Assigned;
 ///
 /// In Dgraph v1.1.x is mutation response represented as Response object
 ///
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 pub type MutationResponse = Response;
 
 ///
@@ -40,19 +40,19 @@ pub struct Mutated<C: ILazyClient> {
 ///
 /// Upsert mutation can be defined with one or more mutations
 ///
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 pub struct UpsertMutation {
     mu: Vec<Mutation>,
 }
 
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 impl From<Vec<Mutation>> for UpsertMutation {
     fn from(mu: Vec<Mutation>) -> Self {
         Self { mu }
     }
 }
 
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 impl From<Mutation> for UpsertMutation {
     fn from(mu: Mutation) -> Self {
         Self { mu: vec![mu] }
@@ -333,7 +333,7 @@ pub trait Mutate: Query {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
@@ -355,7 +355,7 @@ pub trait Mutate: Query {
     /// * `GrpcError`: there is error in communication or server does not accept mutation
     /// * `MissingTxnContext`: there is error in txn setup
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_and_commit_now<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
@@ -470,7 +470,7 @@ pub trait Mutate: Query {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_with_vars<Q, K, V, M>(
         &mut self,
         query: Q,
@@ -501,7 +501,7 @@ pub trait Mutate: Query {
     /// * `GrpcError`: there is error in communication or server does not accept mutation
     /// * `MissingTxnContext`: there is error in txn setup
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_with_vars_and_commit_now<Q, K, V, M>(
         mut self,
         query: Q,
@@ -536,7 +536,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
             .await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert<Q, M>(&mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
@@ -551,7 +551,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         .await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_and_commit_now<Q, M>(mut self, query: Q, mu: M) -> Result<MutationResponse>
     where
         Q: Into<String> + Send + Sync,
@@ -561,7 +561,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
             .await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_with_vars<Q, K, V, M>(
         &mut self,
         query: Q,
@@ -577,7 +577,7 @@ impl<C: ILazyClient> Mutate for TxnMutatedType<C> {
         self.do_mutation(query, vars, mu, false).await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn upsert_with_vars_and_commit_now<Q, K, V, M>(
         mut self,
         query: Q,
@@ -624,7 +624,7 @@ impl<C: ILazyClient> TxnMutatedType<C> {
         Ok(assigned)
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn do_mutation<Q, K, V, M>(
         &mut self,
         query: Q,
