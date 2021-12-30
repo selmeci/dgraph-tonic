@@ -5,11 +5,12 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use http::Uri;
 use rand::Rng;
+use tonic::codegen::InterceptedService;
+use tonic::transport::Channel;
 
-use crate::{
-    IDgraphClient, Operation, Payload, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
-};
+use crate::api::dgraph_client::DgraphClient as DClient;
 use crate::api::Version;
+use crate::client::acl::DgraphAclClient;
 #[cfg(feature = "acl")]
 pub use crate::client::acl::{
     AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
@@ -24,6 +25,7 @@ pub use crate::client::default::{
 pub use crate::client::endpoints::Endpoints;
 use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
+use crate::client::slash_ql::DgraphSlashQlClient;
 #[cfg(feature = "slash-ql")]
 pub use crate::client::slash_ql::{
     SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
@@ -34,6 +36,9 @@ pub use crate::client::tls::{
 };
 use crate::errors::ClientError;
 use crate::stub::Stub;
+use crate::{
+    IDgraphClient, Operation, Payload, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+};
 
 #[cfg(feature = "acl")]
 pub(crate) mod acl;
@@ -80,6 +85,21 @@ pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
     };
     Ok(balance_list)
 }
+
+///
+/// Available types of DgraphClient
+///
+#[derive(Debug, Clone)]
+pub enum DgraphClient {
+    Default { client: DClient<Channel> },
+    Acl { client: DgraphAclClient },
+    SlashQl { client: DgraphSlashQlClient },
+}
+
+///
+/// Dgraph client with interceptor
+///
+pub type DgraphInterceptorClient<T> = DClient<InterceptedService<Channel, T>>;
 
 ///
 /// Marker for client variant implementation

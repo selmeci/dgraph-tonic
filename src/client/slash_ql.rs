@@ -1,22 +1,25 @@
+use std::convert::TryInto;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use tonic::metadata::MetadataValue;
-use tonic::transport::{Channel, ClientTlsConfig};
-use tonic::Request;
-
-use crate::api::dgraph_client::DgraphClient;
-use crate::client::lazy::{ILazyChannel, ILazyClient};
-use crate::client::tls::LazyTlsChannel;
-use crate::client::{rnd_item, ClientVariant, IClient};
-use crate::{Endpoints, TlsClient, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use http::Uri;
-use std::convert::TryInto;
 use tokio_rustls::rustls::{
     Certificate as RustCertificate, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError,
 };
-use webpki::DNSNameRef;
+use tokio_rustls::webpki::DNSNameRef;
+use tonic::metadata::MetadataValue;
+use tonic::service::Interceptor;
+use tonic::transport::ClientTlsConfig;
+use tonic::Request;
+
+use crate::api::dgraph_client::DgraphClient as DClient;
+use crate::client::lazy::{ILazyChannel, ILazyClient};
+use crate::client::tls::LazyTlsChannel;
+use crate::client::{rnd_item, ClientVariant, DgraphClient, DgraphInterceptorClient, IClient};
+use crate::{
+    Endpoints, Status, TlsClient, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+};
 
 const ALPN_H2: &str = "h2";
 
@@ -37,6 +40,21 @@ impl ServerCertVerifier for InsecureVerifier {
 
 pub struct InsecureVerifier {}
 
+#[derive(Clone, Debug)]
+pub struct SlashQlInterceptor {
+    api_key: Arc<String>,
+}
+
+impl Interceptor for SlashQlInterceptor {
+    fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
+        let api_key = MetadataValue::from_str(&self.api_key).expect("gRPC metadata");
+        request.metadata_mut().insert("authorization", api_key);
+        Ok(request)
+    }
+}
+
+pub type DgraphSlashQlClient = DgraphInterceptorClient<SlashQlInterceptor>;
+
 ///
 /// SlashQL gRPC lazy Dgraph client
 ///
@@ -44,7 +62,7 @@ pub struct InsecureVerifier {}
 pub struct LazySlashQlClient {
     channel: LazyTlsChannel,
     api_key: Arc<String>,
-    client: Option<DgraphClient<Channel>>,
+    client: Option<DgraphClient>,
 }
 
 impl LazySlashQlClient {
@@ -60,11 +78,10 @@ impl LazySlashQlClient {
         if self.client.is_none() {
             let channel = self.channel.channel().await?;
             let api_key = Arc::clone(&self.api_key);
-            let client = DgraphClient::with_interceptor(channel, move |mut req: Request<()>| {
-                let api_key = MetadataValue::from_str(&api_key).expect("gRPC metadata");
-                req.metadata_mut().insert("authorization", api_key);
-                Ok(req)
-            });
+            let interceptor = SlashQlInterceptor { api_key };
+            let client = DgraphClient::SlashQl {
+                client: DClient::with_interceptor(channel, interceptor),
+            };
             self.client.replace(client);
         }
         Ok(())
@@ -75,7 +92,7 @@ impl LazySlashQlClient {
 impl ILazyClient for LazySlashQlClient {
     type Channel = LazyTlsChannel;
 
-    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>> {
+    async fn client(&mut self) -> Result<&mut DgraphClient> {
         self.init().await?;
         if let Some(client) = &mut self.client {
             Ok(client)

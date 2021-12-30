@@ -4,13 +4,13 @@ use tonic::Request;
 use tracing::trace;
 use tracing_attributes::instrument;
 
+use crate::client::{DgraphClient, ILazyClient};
 #[cfg(feature = "dgraph-1-0")]
 use crate::{Assigned, Mutation};
 use crate::{
     Check, ClientError, IDgraphClient, LoginRequest, Operation, Payload, Request as DgraphRequest,
     Response as DgraphResponse, TxnContext, Version,
 };
-use crate::client::ILazyClient;
 
 ///
 /// Hold channel connection do Dgraph and implement calls for Dgraph API operations.
@@ -33,7 +33,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("login");
         let request = Request::new(login);
         let client = self.client.client().await?;
-        match client.login(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.login(request).await,
+            DgraphClient::Acl { client } => client.login(request).await,
+            DgraphClient::SlashQl { client } => client.login(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotLogin(status).into()),
         }
@@ -44,7 +49,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("query");
         let request = Request::new(query);
         let client = self.client.client().await?;
-        match client.query(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.query(request).await,
+            DgraphClient::Acl { client } => client.query(request).await,
+            DgraphClient::SlashQl { client } => client.query(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotQuery(status).into()),
         }
@@ -56,7 +66,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("mutate");
         let request = Request::new(mu);
         let client = self.client.client().await?;
-        match client.mutate(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.mutate(request).await,
+            DgraphClient::Acl { client } => client.mutate(request).await,
+            DgraphClient::SlashQl { client } => client.mutate(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotMutate(status).into()),
         }
@@ -68,7 +83,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("do_request");
         let request = Request::new(req);
         let client = self.client.client().await?;
-        match client.query(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.query(request).await,
+            DgraphClient::Acl { client } => client.query(request).await,
+            DgraphClient::SlashQl { client } => client.query(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotDoRequest(status).into()),
         }
@@ -79,7 +99,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("alter");
         let request = Request::new(op);
         let client = self.client.client().await?;
-        match client.alter(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.alter(request).await,
+            DgraphClient::Acl { client } => client.alter(request).await,
+            DgraphClient::SlashQl { client } => client.alter(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotAlter(status).into()),
         }
@@ -90,7 +115,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("commit_or_abort");
         let request = Request::new(txn);
         let client = self.client.client().await?;
-        match client.commit_or_abort(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.commit_or_abort(request).await,
+            DgraphClient::Acl { client } => client.commit_or_abort(request).await,
+            DgraphClient::SlashQl { client } => client.commit_or_abort(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotCommitOrAbort(status).into()),
         }
@@ -101,7 +131,12 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         trace!("check_version");
         let request = Request::new(Check {});
         let client = self.client.client().await?;
-        match client.check_version(request).await {
+        let response = match client {
+            DgraphClient::Default { client } => client.check_version(request).await,
+            DgraphClient::Acl { client } => client.check_version(request).await,
+            DgraphClient::SlashQl { client } => client.check_version(request).await,
+        };
+        match response {
             Ok(response) => Ok(response.into_inner()),
             Err(status) => Err(ClientError::CannotCheckVersion(status).into()),
         }
