@@ -4,7 +4,7 @@ pub use tonic::Status;
 #[cfg(feature = "dgraph-1-0")]
 pub use crate::api::Assigned;
 use crate::api::IDgraphClient;
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 pub use crate::api::Metrics;
 pub use crate::api::{
     Check, Latency, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext,

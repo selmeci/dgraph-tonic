@@ -4,16 +4,34 @@ use anyhow::Result;
 use async_trait::async_trait;
 use prost::Message;
 use tonic::metadata::MetadataValue;
-use tonic::transport::Channel;
-use tonic::Request;
+use tonic::service::Interceptor;
+use tonic::{Request, Status};
 
-use crate::api::dgraph_client::DgraphClient;
+use crate::api::dgraph_client::DgraphClient as DClient;
 use crate::api::{IDgraphClient, Jwt, LoginRequest};
 use crate::client::lazy::{ILazyChannel, ILazyClient};
 #[cfg(feature = "tls")]
 use crate::client::tls::LazyTlsChannel;
-use crate::client::{rnd_item, ClientVariant, IClient};
+use crate::client::{rnd_item, ClientVariant, DgraphClient, DgraphInterceptorClient, IClient};
 use crate::{LazyChannel, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
+
+#[derive(Clone, Debug)]
+pub struct AclInterceptor {
+    access_jwt: Arc<Mutex<String>>,
+}
+
+impl Interceptor for AclInterceptor {
+    fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
+        let token = {
+            let access_jwt = self.access_jwt.lock().unwrap();
+            MetadataValue::from_str(&access_jwt).expect("gRPC metadata")
+        };
+        request.metadata_mut().insert("accessjwt", token);
+        Ok(request)
+    }
+}
+
+pub type DgraphAclClient = DgraphInterceptorClient<AclInterceptor>;
 
 ///
 /// Acl gRPC lazy Dgraph client
@@ -22,7 +40,7 @@ use crate::{LazyChannel, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, Txn
 pub struct LazyAclClient<C: ILazyChannel> {
     channel: C,
     access_jwt: Arc<Mutex<String>>,
-    client: Option<DgraphClient<Channel>>,
+    client: Option<DgraphClient>,
 }
 
 impl<C: ILazyChannel> LazyAclClient<C> {
@@ -38,14 +56,10 @@ impl<C: ILazyChannel> LazyAclClient<C> {
         if self.client.is_none() {
             let channel = self.channel.channel().await?;
             let access_jwt = Arc::clone(&self.access_jwt);
-            let client = DgraphClient::with_interceptor(channel, move |mut req: Request<()>| {
-                let token = {
-                    let access_jwt = access_jwt.lock().unwrap();
-                    MetadataValue::from_str(&access_jwt).expect("gRPC metadata")
-                };
-                req.metadata_mut().insert("accessjwt", token);
-                Ok(req)
-            });
+            let interceptor = AclInterceptor { access_jwt };
+            let client = DgraphClient::Acl {
+                client: DClient::with_interceptor(channel, interceptor),
+            };
             self.client.replace(client);
         }
         Ok(())
@@ -56,7 +70,7 @@ impl<C: ILazyChannel> LazyAclClient<C> {
 impl<C: ILazyChannel> ILazyClient for LazyAclClient<C> {
     type Channel = C;
 
-    async fn client(&mut self) -> Result<&mut DgraphClient<Channel>> {
+    async fn client(&mut self) -> Result<&mut DgraphClient> {
         self.init().await?;
         if let Some(client) = &mut self.client {
             Ok(client)

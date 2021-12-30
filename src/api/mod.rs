@@ -3,14 +3,17 @@ use async_trait::async_trait;
 
 #[cfg(feature = "dgraph-1-0")]
 pub use crate::api::v1_0_x::*;
-#[cfg(feature = "dgraph-1-1")]
+#[cfg(any(feature = "dgraph-1-1"))]
 pub use crate::api::v1_1_x::*;
+#[cfg(feature = "dgraph-21-03")]
+pub use crate::api::v21_03_0::*;
 
 mod mutation;
 mod response;
 mod txn_context;
 mod v1_0_x;
 mod v1_1_x;
+mod v21_03_0;
 
 #[async_trait]
 #[doc(hidden)]
@@ -22,7 +25,7 @@ pub(crate) trait IDgraphClient: Clone + Sized {
     #[cfg(feature = "dgraph-1-0")]
     async fn mutate(&mut self, mu: Mutation) -> Result<Assigned>;
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn do_request(&mut self, req: Request) -> Result<Response>;
 
     async fn alter(&mut self, op: Operation) -> Result<Payload>;

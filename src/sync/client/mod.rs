@@ -306,7 +306,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     pub fn set_schema_in_background<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),

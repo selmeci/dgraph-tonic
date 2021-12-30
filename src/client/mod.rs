@@ -5,11 +5,16 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use http::Uri;
 use rand::Rng;
+#[cfg(any(feature = "acl", feature = "slash-ql"))]
+use tonic::codegen::InterceptedService;
+use tonic::transport::Channel;
 
+use crate::api::dgraph_client::DgraphClient as DClient;
 use crate::api::Version;
 #[cfg(feature = "acl")]
 pub use crate::client::acl::{
-    AclClient, AclClientType, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
+    AclClient, AclClientType, DgraphAclClient, TxnAcl, TxnAclBestEffort, TxnAclMutated,
+    TxnAclReadOnly,
 };
 #[cfg(all(feature = "acl", feature = "tls"))]
 pub use crate::client::acl::{
@@ -23,7 +28,8 @@ use crate::client::lazy::ILazyChannel;
 pub(crate) use crate::client::lazy::ILazyClient;
 #[cfg(feature = "slash-ql")]
 pub use crate::client::slash_ql::{
-    SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort, TxnSlashQlMutated, TxnSlashQlReadOnly,
+    DgraphSlashQlClient, SlashQl, SlashQlClient, TxnSlashQl, TxnSlashQlBestEffort,
+    TxnSlashQlMutated, TxnSlashQlReadOnly,
 };
 #[cfg(feature = "tls")]
 pub use crate::client::tls::{
@@ -50,7 +56,7 @@ pub(crate) mod tls;
 ///
 pub(crate) fn rnd_item<T: Clone>(items: &[T]) -> T {
     let mut rng = rand::thread_rng();
-    let i = rng.gen_range(0, items.len());
+    let i = rng.gen_range(0..items.len());
     if let Some(item) = items.get(i) {
         item.to_owned()
     } else {
@@ -80,6 +86,30 @@ pub(crate) fn balance_list<U: TryInto<Uri>, E: Into<Endpoints<U>>>(
     };
     Ok(balance_list)
 }
+
+///
+/// Available types of DgraphClient
+///
+#[derive(Debug, Clone)]
+pub enum DgraphClient {
+    Default {
+        client: DClient<Channel>,
+    },
+    #[cfg(feature = "acl")]
+    Acl {
+        client: DgraphAclClient,
+    },
+    #[cfg(feature = "slash-ql")]
+    SlashQl {
+        client: DgraphSlashQlClient,
+    },
+}
+
+///
+/// Dgraph client with interceptor
+///
+#[cfg(any(feature = "acl", feature = "slash-ql"))]
+pub type DgraphInterceptorClient<T> = DClient<InterceptedService<Channel, T>>;
 
 ///
 /// Marker for client variant implementation
@@ -317,7 +347,7 @@ impl<C: IClient> ClientVariant<C> {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     pub async fn set_schema_in_background<S: Into<String>>(&self, schema: S) -> Result<Payload> {
         let op = Operation {
             schema: schema.into(),

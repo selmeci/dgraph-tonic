@@ -1,6 +1,6 @@
 [package]
 name = "dgraph-tonic"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Selmeci <selmeci.roman@gmail.com>"]
 edition = "2018"
 description = "A rust async/sync client for Dgraph database build with Tonic crate"
@@ -17,27 +17,27 @@ exclude = [
 
 [dependencies]
 anyhow = "1.0"
-async-stream = "0.2"
+async-stream = "0.3"
 async-trait = "0.1"
 futures = "0.3"
 http = "0.2"
 lazy_static = "1.4"
-prost = "0.7"
-rand = "0.7"
-tokio-rustls = {version = "0.22", features = ["dangerous_configuration"], optional = true}
+prost = "0.9"
+rand = "0.8"
+tokio-rustls = { version = "0.22", features = ["dangerous_configuration"], optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
-tonic = {version = "0.4", features = ["tls"]}
+tonic = {version = "0.6", features = ["tls"]}
 tracing = "0.1"
 tracing-attributes = "0.1"
 tracing-futures = "0.2"
-webpki = {version = "0.21",optional = true}
+webpki = {version = "0.22",optional = true}
 
 [build-dependencies]
-tonic-build = "0.4"
+tonic-build = "0.6"
 
 
 [features]
@@ -46,7 +46,8 @@ all = ["acl", "default", "tls", "sync", "experimental", "slash-ql"]
 acl = []
 dgraph-1-0 = []
 dgraph-1-1 = []
-slash-ql = ["tls","tokio-rustls","webpki"]
+dgraph-21-03 = []
+slash-ql = ["tls", "tokio-rustls", "webpki"]
 sync = []
 tls = []
 experimental = []

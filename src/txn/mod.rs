@@ -203,7 +203,7 @@ pub trait Query: Send + Sync {
     /// }
     /// ```
     ///
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync;
@@ -330,7 +330,7 @@ pub trait Query: Send + Sync {
     ///     println!("{}",String::from_utf8(resp.rdf).unwrap());
     /// }
     /// ```
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -352,7 +352,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
             .await
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf<Q>(&mut self, query: Q) -> Result<Response>
     where
         Q: Into<String> + Send + Sync,
@@ -383,7 +383,7 @@ impl<S: IState, C: ILazyClient> Query for TxnVariant<S, C> {
         Ok(response)
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     async fn query_rdf_with_vars<Q, K, V>(
         &mut self,
         query: Q,
@@ -507,7 +507,7 @@ mod tests {
         assert!(commit.is_ok())
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert() {
         let client = client().await;
@@ -549,7 +549,7 @@ mod tests {
         assert!(txn.commit().await.is_ok());
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_and_commit_now() {
         let client = client().await;
@@ -591,7 +591,7 @@ mod tests {
         assert!(response.is_ok())
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_with_vars() {
         let client = client().await;
@@ -635,7 +635,7 @@ mod tests {
         assert!(txn.commit().await.is_ok());
     }
 
-    #[cfg(feature = "dgraph-1-1")]
+    #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
     #[tokio::test]
     async fn upsert_with_vars_and_commit_now() {
         let client = client().await;
