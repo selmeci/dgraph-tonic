@@ -31,7 +31,7 @@ services:
       - 18080:8080
       - 19080:9080
     restart: on-failure
-    command: dgraph alpha --my=server:7080 --lru_mb=2048 --zero=zero:5080 --acl_secret_file /jwt/hmac-secret
+    command: dgraph alpha --my=server:7080 --zero=zero:5080 --acl secret-file=/jwt/hmac-secret
 
 volumes:
   dgraph:

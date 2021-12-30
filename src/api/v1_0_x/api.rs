@@ -273,7 +273,6 @@ pub mod dgraph_client {
     pub struct DgraphClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-
     impl DgraphClient<tonic::transport::Channel> {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
@@ -285,12 +284,13 @@ pub mod dgraph_client {
             Ok(Self::new(conn))
         }
     }
+
     impl<T> DgraphClient<T>
-        where
-            T: tonic::client::GrpcService<tonic::body::BoxBody>,
-            T::ResponseBody: Body + Send + 'static,
-            T::Error: Into<StdError>,
-            <T::ResponseBody as Body>::Error: Into<StdError> + Send,
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::ResponseBody: Body + Send + 'static,
+        T::Error: Into<StdError>,
+        <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
         pub fn new(inner: T) -> Self {
             let inner = tonic::client::Grpc::new(inner);
@@ -300,15 +300,15 @@ pub mod dgraph_client {
             inner: T,
             interceptor: F,
         ) -> DgraphClient<InterceptedService<T, F>>
-            where
-                F: tonic::service::Interceptor,
-                T: tonic::codegen::Service<
-                    http::Request<tonic::body::BoxBody>,
-                    Response=http::Response<
-                        <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
-                    >,
+        where
+            F: tonic::service::Interceptor,
+            T: tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
-                <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+            >,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
                 Into<StdError> + Send + Sync,
         {
             DgraphClient::new(InterceptedService::new(inner, interceptor))
