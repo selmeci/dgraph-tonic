@@ -6,16 +6,16 @@ use std::hash::Hash;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::{Mutation, Request};
-#[cfg(feature = "dgraph-1-0")]
-use crate::Assigned;
 use crate::client::ILazyClient;
 use crate::errors::DgraphError;
+use crate::txn::default::Base;
+use crate::txn::{IState, Query, TxnState, TxnType, TxnVariant};
+#[cfg(feature = "dgraph-1-0")]
+use crate::Assigned;
 use crate::IDgraphClient;
 #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 use crate::Response;
-use crate::txn::{IState, Query, TxnState, TxnType, TxnVariant};
-use crate::txn::default::Base;
+use crate::{Mutation, Request};
 
 ///
 /// In Dgraph v1.0.x is mutation response represented as Assigned object

@@ -7,14 +7,14 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::{DgraphError, IDgraphClient};
-use crate::{Request, Response, TxnContext};
 use crate::client::ILazyClient;
 use crate::stub::Stub;
 pub use crate::txn::best_effort::TxnBestEffortType;
 pub use crate::txn::default::TxnType;
 pub use crate::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::txn::read_only::TxnReadOnlyType;
+use crate::{DgraphError, IDgraphClient};
+use crate::{Request, Response, TxnContext};
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -419,10 +419,10 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::{Mutate, Mutation};
+    use crate::client::Client;
     #[cfg(feature = "acl")]
     use crate::client::{AclClientType, LazyChannel};
-    use crate::client::Client;
+    use crate::{Mutate, Mutation};
 
     use super::*;
 

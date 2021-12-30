@@ -8,10 +8,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::runtime::Runtime;
 
-use crate::{Query, Response};
 use crate::client::ILazyClient;
 use crate::sync::txn::{IState, TxnReadOnlyType, TxnVariant};
 use crate::txn::TxnBestEffortType as AsyncBestEffortTxn;
+use crate::{Query, Response};
 
 ///
 /// Inner state for read only transaction

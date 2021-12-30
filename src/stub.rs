@@ -35,7 +35,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.login(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.login(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.login(request).await,
         };
         match response {
@@ -51,7 +53,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.query(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.query(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.query(request).await,
         };
         match response {
@@ -68,7 +72,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.mutate(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.mutate(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.mutate(request).await,
         };
         match response {
@@ -85,7 +91,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.query(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.query(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.query(request).await,
         };
         match response {
@@ -101,7 +109,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.alter(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.alter(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.alter(request).await,
         };
         match response {
@@ -117,7 +127,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.commit_or_abort(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.commit_or_abort(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.commit_or_abort(request).await,
         };
         match response {
@@ -133,7 +145,9 @@ impl<C: ILazyClient> IDgraphClient for Stub<C> {
         let client = self.client.client().await?;
         let response = match client {
             DgraphClient::Default { client } => client.check_version(request).await,
+            #[cfg(feature = "acl")]
             DgraphClient::Acl { client } => client.check_version(request).await,
+            #[cfg(feature = "slash-ql")]
             DgraphClient::SlashQl { client } => client.check_version(request).await,
         };
         match response {

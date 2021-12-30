@@ -8,17 +8,17 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::runtime::Runtime;
 
-#[cfg(feature = "dgraph-1-0")]
-use crate::Assigned;
 use crate::client::ILazyClient;
-use crate::Mutation;
-use crate::Query as AsyncQuery;
-use crate::Response;
 use crate::sync::txn::{IState, Query, TxnType, TxnVariant};
 use crate::txn::mutated::Mutate as AsyncMutate;
 #[cfg(any(feature = "dgraph-1-1", feature = "dgraph-21-03"))]
 use crate::txn::mutated::UpsertMutation;
 use crate::txn::TxnMutatedType as AsyncMutatedTxn;
+#[cfg(feature = "dgraph-1-0")]
+use crate::Assigned;
+use crate::Mutation;
+use crate::Query as AsyncQuery;
+use crate::Response;
 
 ///
 /// In Dgraph v1.0.x is mutation response represented as Assigned object

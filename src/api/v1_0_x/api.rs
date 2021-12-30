@@ -284,7 +284,6 @@ pub mod dgraph_client {
             Ok(Self::new(conn))
         }
     }
-
     impl<T> DgraphClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,

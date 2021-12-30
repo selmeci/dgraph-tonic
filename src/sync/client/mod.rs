@@ -7,12 +7,11 @@ use async_trait::async_trait;
 use lazy_static::lazy_static;
 use tokio::runtime::Runtime;
 
-use crate::{Operation, Payload, Version};
 use crate::api::IDgraphClient;
+use crate::client::lazy::ILazyChannel;
 #[cfg(feature = "acl")]
 use crate::client::AclClientType as AsyncAclClient;
 use crate::client::ILazyClient;
-use crate::client::lazy::ILazyChannel;
 use crate::stub::Stub;
 #[cfg(feature = "acl")]
 pub use crate::sync::client::acl::{
@@ -33,6 +32,7 @@ pub use crate::sync::client::tls::{
 };
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType};
 use crate::txn::TxnType as AsyncTxn;
+use crate::{Operation, Payload, Version};
 
 #[cfg(feature = "acl")]
 mod acl;

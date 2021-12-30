@@ -5,11 +5,11 @@ use std::ops::{Deref, DerefMut};
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::Response;
 pub use crate::sync::txn::best_effort::TxnBestEffortType;
 pub use crate::sync::txn::default::TxnType;
 pub use crate::sync::txn::mutated::{Mutate, MutationResponse, TxnMutatedType};
 pub use crate::sync::txn::read_only::TxnReadOnlyType;
+use crate::Response;
 
 pub(crate) mod best_effort;
 pub(crate) mod default;
@@ -369,11 +369,11 @@ mod tests {
 
     #[cfg(feature = "acl")]
     use crate::client::LazyChannel;
-    use crate::Mutation;
-    use crate::sync::{Mutate, Query};
     #[cfg(feature = "acl")]
     use crate::sync::client::AclClientType;
     use crate::sync::client::Client;
+    use crate::sync::{Mutate, Query};
+    use crate::Mutation;
 
     #[cfg(not(feature = "acl"))]
     fn client() -> Client {
