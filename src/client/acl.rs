@@ -255,7 +255,7 @@ impl<S: IClient> ClientVariant<S> {
     ///
     /// # Examples
     ///
-    /// In the example above, the client logs into namespace 123 using username `groot` and password `password`. Once logged in, the client can perform all the operations allowed to the groot user of namespace 123.
+    /// In the example above, the client logs into namespace 0 using username `groot` and password `password`. Once logged in, the client can perform all the operations allowed to the groot user of namespace 0.
     ///
     /// ```
     /// use dgraph_tonic::Client;
@@ -263,7 +263,7 @@ impl<S: IClient> ClientVariant<S> {
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
-    ///     let logged = client.login_into_namespace("groot", "password", 123).await.expect("Logged in");
+    ///     let logged = client.login_into_namespace("groot", "password", 0).await.expect("Logged in");
     ///     // now you can use logged client for all operations over DB
     ///     Ok(())
     /// }
@@ -339,6 +339,27 @@ mod tests {
             dbg!(err);
         }
         assert!(client.is_ok());
+    }
+
+    #[tokio::test]
+    async fn login_into_namespace() {
+        let client = Client::new("http://127.0.0.1:19080")
+            .unwrap()
+            .login_into_namespace("groot", "password", 0)
+            .await;
+        if let Err(err) = &client {
+            dbg!(err);
+        }
+        assert!(client.is_ok());
+    }
+
+    #[tokio::test]
+    async fn deny_login_into_namespace() {
+        let client = Client::new("http://127.0.0.1:19080")
+            .unwrap()
+            .login_into_namespace("groot", "password", 123)
+            .await;
+        assert!(client.is_err());
     }
 
     #[tokio::test]
