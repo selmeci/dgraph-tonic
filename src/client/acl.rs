@@ -170,6 +170,44 @@ pub type TxnAclTlsBestEffort = TxnBestEffortType<LazyAclClient<LazyTlsChannel>>;
 pub type TxnAclTlsMutated = TxnMutatedType<LazyAclClient<LazyTlsChannel>>;
 
 impl<S: IClient> ClientVariant<S> {
+    async fn do_login<T: Into<String>>(
+        self,
+        user_id: T,
+        password: T,
+        namespace: Option<u64>,
+    ) -> Result<AclClientType<S::Channel>> {
+        let mut stub = self.any_stub();
+        let mut login = LoginRequest {
+            userid: user_id.into(),
+            password: password.into(),
+            ..Default::default()
+        };
+        #[cfg(feature = "dgraph-21-03")]
+        if let Some(namespace) = namespace {
+            login.namespace = namespace;
+        }
+        let resp = stub.login(login).await?;
+        let jwt: Jwt = Jwt::decode(resp.json.as_slice())?;
+        let access_jwt = Arc::new(Mutex::new(jwt.access_jwt));
+        let clients = self
+            .extra
+            .clients()
+            .into_iter()
+            .map(|client| {
+                let channel = client.channel();
+                LazyAclClient::new(channel, Arc::clone(&access_jwt))
+            })
+            .collect::<Vec<LazyAclClient<S::Channel>>>();
+        Ok(AclClientType {
+            state: self.state,
+            extra: Acl {
+                clients,
+                access_jwt,
+                refresh_jwt: Mutex::new(jwt.refresh_jwt),
+            },
+        })
+    }
+
     ///
     /// Try to login. If login is success than consume original client and return client with acl turn on.
     ///
@@ -200,32 +238,45 @@ impl<S: IClient> ClientVariant<S> {
         user_id: T,
         password: T,
     ) -> Result<AclClientType<S::Channel>> {
-        let mut stub = self.any_stub();
-        let login = LoginRequest {
-            userid: user_id.into(),
-            password: password.into(),
-            ..Default::default()
-        };
-        let resp = stub.login(login).await?;
-        let jwt: Jwt = Jwt::decode(resp.json.as_slice())?;
-        let access_jwt = Arc::new(Mutex::new(jwt.access_jwt));
-        let clients = self
-            .extra
-            .clients()
-            .into_iter()
-            .map(|client| {
-                let channel = client.channel();
-                LazyAclClient::new(channel, Arc::clone(&access_jwt))
-            })
-            .collect::<Vec<LazyAclClient<S::Channel>>>();
-        Ok(AclClientType {
-            state: self.state,
-            extra: Acl {
-                clients,
-                access_jwt,
-                refresh_jwt: Mutex::new(jwt.refresh_jwt),
-            },
-        })
+        self.do_login(user_id, password, None).await
+    }
+
+    ///
+    /// Try to login. If login is success than consume original client and return client with acl turn on.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id`: User ID
+    /// * `password`: User password
+    /// * `namespace`: Namespace Id
+    ///
+    /// # Errors
+    ///
+    ///
+    /// # Examples
+    ///
+    /// In the example above, the client logs into namespace 123 using username `groot` and password `password`. Once logged in, the client can perform all the operations allowed to the groot user of namespace 123.
+    ///
+    /// ```
+    /// use dgraph_tonic::Client;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+    ///     let logged = client.login_into_namespace("groot", "password", 123).await.expect("Logged in");
+    ///     // now you can use logged client for all operations over DB
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-21-03")]
+    pub async fn login_into_namespace<T: Into<String>>(
+        self,
+        user_id: T,
+        password: T,
+        namespace: u64,
+    ) -> Result<AclClientType<S::Channel>> {
+        self.do_login(user_id, password, Some(namespace)).await
     }
 }
 
