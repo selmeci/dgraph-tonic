@@ -254,9 +254,7 @@ pub struct Jwt {
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-
     use tonic::codegen::*;
-
     #[doc = " Graph response."]
     #[derive(Debug, Clone)]
     pub struct DgraphClient<T> {
