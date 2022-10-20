@@ -341,6 +341,7 @@ mod tests {
         assert!(client.is_ok());
     }
 
+    #[cfg(feature = "dgraph-21-03")]
     #[tokio::test]
     async fn login_into_namespace() {
         let client = Client::new("http://127.0.0.1:19080")
@@ -353,6 +354,7 @@ mod tests {
         assert!(client.is_ok());
     }
 
+    #[cfg(feature = "dgraph-21-03")]
     #[tokio::test]
     async fn deny_login_into_namespace() {
         let client = Client::new("http://127.0.0.1:19080")
