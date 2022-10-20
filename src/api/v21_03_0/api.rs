@@ -18,6 +18,8 @@ pub struct Request {
     pub commit_now: bool,
     #[prost(enumeration = "request::RespFormat", tag = "14")]
     pub resp_format: i32,
+    #[prost(string, tag = "15")]
+    pub hash: ::prost::alloc::string::String,
 }
 /// Nested message and enum types in `Request`.
 pub mod request {
@@ -130,6 +132,8 @@ pub struct TxnContext {
     /// List of predicates involved in this transaction.
     #[prost(string, repeated, tag = "5")]
     pub preds: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, tag = "6")]
+    pub hash: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Check {}
@@ -167,12 +171,12 @@ pub struct NQuad {
     pub object_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
     pub object_value: ::core::option::Option<Value>,
-    #[prost(string, tag = "5")]
-    pub label: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
     pub lang: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "7")]
     pub facets: ::prost::alloc::vec::Vec<Facet>,
+    #[prost(uint64, tag = "8")]
+    pub namespace: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
@@ -243,6 +247,8 @@ pub struct LoginRequest {
     pub password: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub refresh_token: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "4")]
+    pub namespace: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Jwt {
@@ -254,9 +260,7 @@ pub struct Jwt {
 #[doc = r" Generated client implementations."]
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-
     use tonic::codegen::*;
-
     #[doc = " Graph response."]
     #[derive(Debug, Clone)]
     pub struct DgraphClient<T> {

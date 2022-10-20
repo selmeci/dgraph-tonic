@@ -10,6 +10,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::configure()
         .build_server(false)
         .out_dir("./src/api/v21_03_0")
-        .compile(&["proto/api_v1.1.x.proto"], &["proto"])?;
+        .compile(&["proto/api_v21.03.x.proto"], &["proto"])?;
     Ok(())
 }

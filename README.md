@@ -65,7 +65,8 @@ Supported features:
 - *acl*: Enable client with authentification.
 - *all*: enable tls, acl and sync features with dgraph-1-1
 - *dgraph-1-0*: Enable client for Dgraph v1.0.x
-- *dgraph-1-1*: Enable client for Dgraph v1.1.x and v20.0.x
+- *dgraph-1-1*: Enable client for Dgraph v1.1.x and v20.03.x
+- *dgraph-21-03*: Enable client for Dgraph v21.03.x
 - *slash-ql*: Enable client for [Slash GraphQL](https://dgraph.io/slash-graphql) service
 - *tls*: Enable secured TlsClient
 - *sync*: Enable synchronous Client
@@ -74,12 +75,13 @@ Supported features:
 
 Depending on the version of Dgraph that you are connecting to, you will have to use a different feature of this client (*dgraph-1-0* is default version).
 
-| Dgraph version |      feature      |
-|:--------------:|:-----------------:|
-|     1.0.X      |    *dgraph-1-0*   |
-|     1.1.X      |    *dgraph-1-1*   |
-|     1.2.X      |    *dgraph-1-1*   |
-|    20.03.X     |    *dgraph-1-1*   |
+| Dgraph version |      feature       |
+|:--------------:|:------------------:|
+|     1.0.X      |    *dgraph-1-0*    |
+|     1.1.X      |    *dgraph-1-1*    |
+|     1.2.X      |    *dgraph-1-1*    |
+|    20.03.X     |    *dgraph-1-1*    |
+|    21.03.X     |   *dgraph-21-03*   |
 
 Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `MutatedTxn.mutate()`. This function returns a `Assigned` type in *dgraph-1-0* but a `Response` type in *dgraph-1-1*.
 
@@ -129,6 +131,25 @@ async fn main() {
 
 All certs must be in `PEM` format.
 
+### Multi-tenancy
+
+In [multi-tenancy](https://dgraph.io/docs/enterprise-features/multitenancy) environments, `dgraph-tonic` provides a new method `login_into_namespace()`, which will allow the users to login to a specific namespace.
+
+In order to create a client, and make the client login into namespace `123`:
+
+```rust
+use dgraph_tonic::Client;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+   let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+   let logged = client.login_into_namespace("groot", "password", 123).await.expect("Logged into namespace");
+   Ok(())
+}
+```
+
+In the example above, the client logs into namespace `123` using username `groot` and password `password`.
+Once logged in, the client can perform all the operations allowed to the `groot` user of namespace `123`.
 
 ### Create a Slash GraphQL client
 
