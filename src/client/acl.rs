@@ -183,7 +183,7 @@ impl<S: IClient> ClientVariant<S> {
             userid: login.user_id.into(),
             password: login.password.into(),
             #[cfg(feature = "dgraph-21-03")]
-            namespace: login.namespace.unwrap_or(0),
+            namespace: login.namespace.unwrap_or_default(),
             ..Default::default()
         };
         let resp = stub.login(login).await?;

@@ -23,3 +23,25 @@ impl<S: TryInto<Uri>> From<S> for Endpoints<S> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_vector() {
+        let urls = vec!["http://localhost:2379", "http://localhost:22379"];
+        let endpoints = Endpoints::from(urls.clone());
+        assert_eq!(endpoints.endpoints.len(), 2);
+        assert_eq!(endpoints.endpoints[0], urls[0]);
+        assert_eq!(endpoints.endpoints[1], urls[1]);
+    }
+
+    #[test]
+    fn from_str() {
+        let url = "http://localhost:2379";
+        let endpoints = Endpoints::from(url);
+        assert_eq!(endpoints.endpoints.len(), 1);
+        assert_eq!(endpoints.endpoints[0], url);
+    }
+}

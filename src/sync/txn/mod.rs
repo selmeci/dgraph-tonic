@@ -364,6 +364,7 @@ impl<S: IState> Query for TxnVariant<S> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::time::Duration;
 
     use serde_derive::{Deserialize, Serialize};
 
@@ -639,6 +640,47 @@ mod tests {
             .expect("Schema is not updated");
         insert_data();
         let mut txn = client.new_read_only_txn();
+        let query = r#"query all($a: string) {
+            uids(func: eq(name, $a)) {
+              uid
+            }
+          }"#;
+        let mut vars = HashMap::new();
+        vars.insert("$a", "Alice");
+        let response = txn.query_with_vars(query, vars);
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[test]
+    fn best_effort_txn_query() {
+        let client = client();
+        client
+            .set_schema("name: string @index(exact) .")
+            .expect("Schema is not updated");
+        insert_data();
+        std::thread::sleep(Duration::from_secs(1));
+        let mut txn = client.new_best_effort_txn();
+        let query = r#"{
+            uids(func: eq(name, "Alice")) {
+                uid
+            }
+        }"#;
+        let response = txn.query(query);
+        assert!(response.is_ok());
+        let mut json: UidJson = response.unwrap().try_into().unwrap();
+        assert!(json.uids.pop().is_some());
+    }
+
+    #[test]
+    fn best_effort_txn_query_with_vars() {
+        let client = client();
+        client
+            .set_schema("name: string @index(exact) .")
+            .expect("Schema is not updated");
+        insert_data();
+        let mut txn = client.new_best_effort_txn();
         let query = r#"query all($a: string) {
             uids(func: eq(name, $a)) {
               uid

@@ -58,6 +58,18 @@ impl IClient for Default {
     ) -> Result<AclClientType<Self::Channel>> {
         self.async_client.login(user_id, password).await
     }
+
+    #[cfg(all(feature = "acl", feature = "dgraph-21-03"))]
+    async fn login_into_namespace<T: Into<String> + Send + Sync>(
+        self,
+        user_id: T,
+        password: T,
+        namespace: u64,
+    ) -> Result<AclClientType<Self::Channel>> {
+        self.async_client
+            .login_into_namespace(user_id, password, namespace)
+            .await
+    }
 }
 
 ///

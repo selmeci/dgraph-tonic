@@ -53,6 +53,16 @@ impl<C: ILazyChannel> IClient for Acl<C> {
     ) -> Result<AsyncAclClient<Self::Channel>> {
         Ok(self.async_client)
     }
+
+    #[cfg(feature = "dgraph-21-03")]
+    async fn login_into_namespace<T: Into<String> + Send + Sync>(
+        self,
+        _user_id: T,
+        _password: T,
+        _namespace: u64,
+    ) -> Result<AsyncAclClient<Self::Channel>> {
+        Ok(self.async_client)
+    }
 }
 
 ///
@@ -156,6 +166,53 @@ impl<S: IClient> ClientVariant<S> {
             extra: Acl { async_client },
         })
     }
+
+    ///
+    /// Try to login. If login is success than consume original client and return client with acl turn on.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id`: User ID
+    /// * `password`: User password
+    ///
+    /// # Errors
+    ///
+    ///
+    /// # Examples
+    ///
+    /// In the example above, the client logs into namespace 0 using username `groot` and password `password`. Once logged in, the client can perform all the operations allowed to the groot user of namespace 0.
+    ///
+    /// ```
+    /// use dgraph_tonic::sync::Client;
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+    ///     let logged = client.login_into_namespace("groot", "password", 0).expect("Logged in");
+    ///     // now you can use logged client for all operations over DB
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    #[cfg(feature = "dgraph-21-03")]
+    pub fn login_into_namespace<T: Into<String> + Send + Sync>(
+        self,
+        user_id: T,
+        password: T,
+        namespace: u64,
+    ) -> Result<AclClientType<S::Channel>> {
+        let async_client = {
+            let client = self.extra;
+            self.state.rt.block_on(async move {
+                client
+                    .login_into_namespace(user_id, password, namespace)
+                    .await
+            })?
+        };
+        Ok(AclClientType {
+            state: self.state,
+            extra: Acl { async_client },
+        })
+    }
 }
 
 impl<C: ILazyChannel> AclClientType<C> {
@@ -197,6 +254,18 @@ mod tests {
         let client = Client::new("http://127.0.0.1:19080")
             .unwrap()
             .login("groot", "password");
+        if let Err(err) = &client {
+            dbg!(err);
+        }
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    #[cfg(feature = "dgraph-21-03")]
+    fn login_into_namespace() {
+        let client = Client::new("http://127.0.0.1:19080")
+            .unwrap()
+            .login_into_namespace("groot", "password", 0);
         if let Err(err) = &client {
             dbg!(err);
         }

@@ -93,6 +93,14 @@ pub trait IClient {
         user_id: T,
         password: T,
     ) -> Result<AsyncAclClient<Self::Channel>>;
+
+    #[cfg(all(feature = "acl", feature = "dgraph-21-03"))]
+    async fn login_into_namespace<T: Into<String> + Send + Sync>(
+        self,
+        user_id: T,
+        password: T,
+        namespace: u64,
+    ) -> Result<AsyncAclClient<Self::Channel>>;
 }
 
 ///
