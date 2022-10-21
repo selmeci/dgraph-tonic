@@ -169,23 +169,23 @@ pub type TxnAclTlsBestEffort = TxnBestEffortType<LazyAclClient<LazyTlsChannel>>;
 #[cfg(feature = "tls")]
 pub type TxnAclTlsMutated = TxnMutatedType<LazyAclClient<LazyTlsChannel>>;
 
+struct Login<T: Into<String>> {
+    user_id: T,
+    password: T,
+    #[cfg(feature = "dgraph-21-03")]
+    namespace: Option<u64>,
+}
+
 impl<S: IClient> ClientVariant<S> {
-    async fn do_login<T: Into<String>>(
-        self,
-        user_id: T,
-        password: T,
-        namespace: Option<u64>,
-    ) -> Result<AclClientType<S::Channel>> {
+    async fn do_login<T: Into<String>>(self, login: Login<T>) -> Result<AclClientType<S::Channel>> {
         let mut stub = self.any_stub();
-        let mut login = LoginRequest {
-            userid: user_id.into(),
-            password: password.into(),
+        let login = LoginRequest {
+            userid: login.user_id.into(),
+            password: login.password.into(),
+            #[cfg(feature = "dgraph-21-03")]
+            namespace: login.namespace.unwrap_or(0),
             ..Default::default()
         };
-        #[cfg(feature = "dgraph-21-03")]
-        if let Some(namespace) = namespace {
-            login.namespace = namespace;
-        }
         let resp = stub.login(login).await?;
         let jwt: Jwt = Jwt::decode(resp.json.as_slice())?;
         let access_jwt = Arc::new(Mutex::new(jwt.access_jwt));
@@ -238,7 +238,13 @@ impl<S: IClient> ClientVariant<S> {
         user_id: T,
         password: T,
     ) -> Result<AclClientType<S::Channel>> {
-        self.do_login(user_id, password, None).await
+        self.do_login(Login {
+            password,
+            user_id,
+            #[cfg(feature = "dgraph-21-03")]
+            namespace: None,
+        })
+        .await
     }
 
     ///
@@ -276,7 +282,13 @@ impl<S: IClient> ClientVariant<S> {
         password: T,
         namespace: u64,
     ) -> Result<AclClientType<S::Channel>> {
-        self.do_login(user_id, password, Some(namespace)).await
+        self.do_login(Login {
+            password,
+            user_id,
+            #[cfg(feature = "dgraph-21-03")]
+            namespace: Some(namespace),
+        })
+        .await
     }
 }
 
