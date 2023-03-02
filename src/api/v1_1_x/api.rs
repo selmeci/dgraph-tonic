@@ -1,3 +1,4 @@
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(uint64, tag = "1")]
@@ -6,8 +7,10 @@ pub struct Request {
     pub query: ::prost::alloc::string::String,
     /// Support for GraphQL like variables.
     #[prost(map = "string, string", tag = "5")]
-    pub vars:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    pub vars: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        ::prost::alloc::string::String,
+    >,
     #[prost(bool, tag = "6")]
     pub read_only: bool,
     #[prost(bool, tag = "7")]
@@ -21,23 +24,56 @@ pub struct Request {
 }
 /// Nested message and enum types in `Request`.
 pub mod request {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
     #[repr(i32)]
     pub enum RespFormat {
         Json = 0,
         Rdf = 1,
     }
+    impl RespFormat {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                RespFormat::Json => "JSON",
+                RespFormat::Rdf => "RDF",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "JSON" => Some(Self::Json),
+                "RDF" => Some(Self::Rdf),
+                _ => None,
+            }
+        }
+    }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Uids {
     #[prost(string, repeated, tag = "1")]
     pub uids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListOfString {
     #[prost(string, repeated, tag = "1")]
     pub value: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
     #[prost(bytes = "vec", tag = "1")]
@@ -52,13 +88,16 @@ pub struct Response {
     /// uids contains a mapping of blank_node => uid for the node. It only returns uids
     /// that were created as part of a mutation.
     #[prost(map = "string, string", tag = "12")]
-    pub uids:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    pub uids: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        ::prost::alloc::string::String,
+    >,
     #[prost(bytes = "vec", tag = "13")]
     pub rdf: ::prost::alloc::vec::Vec<u8>,
     #[prost(map = "string, message", tag = "14")]
     pub hdrs: ::std::collections::HashMap<::prost::alloc::string::String, ListOfString>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Mutation {
     #[prost(bytes = "vec", tag = "1")]
@@ -80,6 +119,7 @@ pub struct Mutation {
     #[prost(bool, tag = "14")]
     pub commit_now: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Operation {
     #[prost(string, tag = "1")]
@@ -100,7 +140,17 @@ pub struct Operation {
 }
 /// Nested message and enum types in `Operation`.
 pub mod operation {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
     #[repr(i32)]
     pub enum DropOp {
         None = 0,
@@ -109,13 +159,41 @@ pub mod operation {
         Attr = 3,
         Type = 4,
     }
+    impl DropOp {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                DropOp::None => "NONE",
+                DropOp::All => "ALL",
+                DropOp::Data => "DATA",
+                DropOp::Attr => "ATTR",
+                DropOp::Type => "TYPE",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "NONE" => Some(Self::None),
+                "ALL" => Some(Self::All),
+                "DATA" => Some(Self::Data),
+                "ATTR" => Some(Self::Attr),
+                "TYPE" => Some(Self::Type),
+                _ => None,
+            }
+        }
+    }
 }
 /// Worker services.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Payload {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxnContext {
     #[prost(uint64, tag = "1")]
@@ -131,13 +209,16 @@ pub struct TxnContext {
     #[prost(string, repeated, tag = "5")]
     pub preds: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Check {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(string, tag = "1")]
     pub tag: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Latency {
     #[prost(uint64, tag = "1")]
@@ -151,12 +232,14 @@ pub struct Latency {
     #[prost(uint64, tag = "5")]
     pub total_ns: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Metrics {
     /// num_uids is the map of number of uids processed by each attribute.
     #[prost(map = "string, uint64", tag = "1")]
     pub num_uids: ::std::collections::HashMap<::prost::alloc::string::String, u64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NQuad {
     #[prost(string, tag = "1")]
@@ -174,6 +257,7 @@ pub struct NQuad {
     #[prost(message, repeated, tag = "7")]
     pub facets: ::prost::alloc::vec::Vec<Facet>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
     #[prost(oneof = "value::Val", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
@@ -181,6 +265,7 @@ pub struct Value {
 }
 /// Nested message and enum types in `Value`.
 pub mod value {
+    #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Val {
         #[prost(string, tag = "1")]
@@ -208,6 +293,7 @@ pub mod value {
         UidVal(u64),
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Facet {
     #[prost(string, tag = "1")]
@@ -225,7 +311,17 @@ pub struct Facet {
 }
 /// Nested message and enum types in `Facet`.
 pub mod facet {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
     #[repr(i32)]
     pub enum ValType {
         String = 0,
@@ -234,7 +330,34 @@ pub mod facet {
         Bool = 3,
         Datetime = 4,
     }
+    impl ValType {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                ValType::String => "STRING",
+                ValType::Int => "INT",
+                ValType::Float => "FLOAT",
+                ValType::Bool => "BOOL",
+                ValType::Datetime => "DATETIME",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "STRING" => Some(Self::String),
+                "INT" => Some(Self::Int),
+                "FLOAT" => Some(Self::Float),
+                "BOOL" => Some(Self::Bool),
+                "DATETIME" => Some(Self::Datetime),
+                _ => None,
+            }
+        }
+    }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
     #[prost(string, tag = "1")]
@@ -244,6 +367,7 @@ pub struct LoginRequest {
     #[prost(string, tag = "3")]
     pub refresh_token: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Jwt {
     #[prost(string, tag = "1")]
@@ -251,17 +375,18 @@ pub struct Jwt {
     #[prost(string, tag = "2")]
     pub refresh_jwt: ::prost::alloc::string::String,
 }
-#[doc = r" Generated client implementations."]
+/// Generated client implementations.
 pub mod dgraph_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    #[doc = " Graph response."]
+    use tonic::codegen::http::Uri;
+    /// Graph response.
     #[derive(Debug, Clone)]
     pub struct DgraphClient<T> {
         inner: tonic::client::Grpc<T>,
     }
     impl DgraphClient<tonic::transport::Channel> {
-        #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
+        /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
             D: std::convert::TryInto<tonic::transport::Endpoint>,
@@ -274,12 +399,16 @@ pub mod dgraph_client {
     impl<T> DgraphClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
+        T::ResponseBody: Body<Data = Bytes> + Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
         pub fn new(inner: T) -> Self {
             let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
         pub fn with_interceptor<F>(
@@ -288,40 +417,47 @@ pub mod dgraph_client {
         ) -> DgraphClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
+            T::ResponseBody: Default,
             T: tonic::codegen::Service<
                 http::Request<tonic::body::BoxBody>,
                 Response = http::Response<
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
         {
             DgraphClient::new(InterceptedService::new(inner, interceptor))
         }
-        #[doc = r" Compress requests with `gzip`."]
-        #[doc = r""]
-        #[doc = r" This requires the server to support it otherwise it might respond with an"]
-        #[doc = r" error."]
-        pub fn send_gzip(mut self) -> Self {
-            self.inner = self.inner.send_gzip();
+        /// Compress requests with the given encoding.
+        ///
+        /// This requires the server to support it otherwise it might respond with an
+        /// error.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
             self
         }
-        #[doc = r" Enable decompressing responses with `gzip`."]
-        pub fn accept_gzip(mut self) -> Self {
-            self.inner = self.inner.accept_gzip();
+        /// Enable decompressing responses.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
             self
         }
         pub async fn login(
             &mut self,
             request: impl tonic::IntoRequest<super::LoginRequest>,
         ) -> Result<tonic::Response<super::Response>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/api.Dgraph/Login");
             self.inner.unary(request.into_request(), path, codec).await
@@ -330,12 +466,15 @@ pub mod dgraph_client {
             &mut self,
             request: impl tonic::IntoRequest<super::Request>,
         ) -> Result<tonic::Response<super::Response>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/api.Dgraph/Query");
             self.inner.unary(request.into_request(), path, codec).await
@@ -344,12 +483,15 @@ pub mod dgraph_client {
             &mut self,
             request: impl tonic::IntoRequest<super::Operation>,
         ) -> Result<tonic::Response<super::Payload>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/api.Dgraph/Alter");
             self.inner.unary(request.into_request(), path, codec).await
@@ -358,12 +500,15 @@ pub mod dgraph_client {
             &mut self,
             request: impl tonic::IntoRequest<super::TxnContext>,
         ) -> Result<tonic::Response<super::TxnContext>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/api.Dgraph/CommitOrAbort");
             self.inner.unary(request.into_request(), path, codec).await
@@ -372,12 +517,15 @@ pub mod dgraph_client {
             &mut self,
             request: impl tonic::IntoRequest<super::Check>,
         ) -> Result<tonic::Response<super::Version>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/api.Dgraph/CheckVersion");
             self.inner.unary(request.into_request(), path, codec).await
