@@ -4,10 +4,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use http::Uri;
-use tokio_rustls::rustls::{
-    Certificate as RustCertificate, RootCertStore, ServerCertVerified, ServerCertVerifier, TLSError,
-};
-use tokio_rustls::webpki::DNSNameRef;
 use tonic::metadata::MetadataValue;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
@@ -20,25 +16,6 @@ use crate::client::{rnd_item, ClientVariant, DgraphClient, DgraphInterceptorClie
 use crate::{
     Endpoints, Status, TlsClient, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
 };
-
-const ALPN_H2: &str = "h2";
-
-impl ServerCertVerifier for InsecureVerifier {
-    ///
-    /// Allow any server certificate
-    ///
-    fn verify_server_cert(
-        &self,
-        _roots: &RootCertStore,
-        _presented_certs: &[RustCertificate],
-        _dns_name: DNSNameRef,
-        _ocsp_response: &[u8],
-    ) -> Result<ServerCertVerified, TLSError> {
-        Ok(ServerCertVerified::assertion())
-    }
-}
-
-pub struct InsecureVerifier {}
 
 #[derive(Clone, Debug)]
 pub struct SlashQlInterceptor {
@@ -112,7 +89,6 @@ impl ILazyClient for LazySlashQlClient {
 #[derive(Debug)]
 #[doc(hidden)]
 pub struct SlashQl {
-    api_key: Arc<String>,
     clients: Vec<LazySlashQlClient>,
 }
 
@@ -192,12 +168,7 @@ impl TlsClient {
         endpoints: E,
         api_key: T,
     ) -> Result<SlashQlClient> {
-        let mut config = tokio_rustls::rustls::ClientConfig::new();
-        config.set_protocols(&[Vec::from(&ALPN_H2[..])]);
-        config
-            .dangerous()
-            .set_certificate_verifier(Arc::new(InsecureVerifier {}));
-        let tls = Arc::new(ClientTlsConfig::new().rustls_client_config(config));
+        let tls = Arc::new(ClientTlsConfig::new());
         let tls_client = Self::init(endpoints, tls)?;
         let api_key = Arc::new(api_key.into());
         let clients = tls_client
@@ -211,7 +182,7 @@ impl TlsClient {
             .collect::<Vec<LazySlashQlClient>>();
         Ok(SlashQlClient {
             state: tls_client.state,
-            extra: SlashQl { clients, api_key },
+            extra: SlashQl { clients },
         })
     }
 }
