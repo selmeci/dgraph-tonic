@@ -28,7 +28,6 @@ pub struct Tls {
 impl IClient for Tls {
     type AsyncClient = AsyncTlsClient;
     type Client = LazyClient<Self::Channel>;
-    #[cfg(feature = "acl")]
     type Channel = LazyTlsChannel;
 
     fn client(&self) -> Self::Client {
