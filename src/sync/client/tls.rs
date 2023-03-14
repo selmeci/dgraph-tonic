@@ -13,7 +13,7 @@ use crate::client::{IClient as IAsyncClient, TlsClient as AsyncTlsClient};
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
-use crate::Endpoints;
+use crate::{EndpointConfig, Endpoints};
 
 ///
 /// Inner state for Tls Client
@@ -146,6 +146,83 @@ impl TlsClient {
                 server_root_ca_cert,
                 client_cert,
                 client_key,
+            )?,
+        };
+        let state = Box::new(ClientState::new());
+        Ok(Self { state, extra })
+    }
+
+    ///
+    /// Create new Sync Dgraph client authorized with custom endpoint configuration and SSL cert for interacting v DB.
+    ///
+    /// The client can be backed by multiple endpoints (to the same server, or multiple servers in a cluster).
+    ///
+    /// # Arguments
+    ///
+    /// * `endpoints` - one endpoint or vector of endpoints
+    /// * `server_root_ca_cert` - CA certificate
+    /// * `client_cert` - Client certificate
+    /// * `client_key` - Client key
+    /// * `endpoint_config` - custom endpoint configuration
+    ///
+    /// # Errors
+    ///
+    /// * endpoints vector is empty
+    /// * item in vector cannot by converted into Uri
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use dgraph_tonic::{Endpoint, EndpointConfig};
+    ///
+    /// use dgraph_tonic::sync::TlsClient;
+    ///
+    /// use std::time::Duration;
+    ///
+    /// #[derive(Debug, Default)]
+    /// struct EndpointWithTimeout {}
+    ///
+    /// impl EndpointConfig for EndpointWithTimeout {
+    ///     fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+    ///         endpoint.timeout(Duration::from_secs(5))
+    ///     }
+    /// }
+    ///
+    /// fn main() {
+    ///     let server_root_ca_cert = std::fs::read("path/to/ca.crt").expect("CA cert");
+    ///     let client_cert = std::fs::read("path/to/client.crt").expect("Client cert");
+    ///     let client_key = std::fs::read("path/to/ca.key").expect("Client key");
+    ///     let endpoint_config = EndpointWithTimeout::default();
+    ///     // vector of endpoints
+    ///     let client = TlsClient::new_with_endpoint_config(
+    ///             vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"],
+    ///             server_root_ca_cert,
+    ///             client_cert,
+    ///             client_key,
+    ///             endpoint_config)
+    ///         .expect("Dgraph TLS client");
+    /// }
+    /// ```
+    ///
+    pub fn new_with_endpoint_config<
+        S: TryInto<Uri>,
+        E: Into<Endpoints<S>>,
+        V: Into<Vec<u8>>,
+        C: EndpointConfig + 'static,
+    >(
+        endpoints: E,
+        server_root_ca_cert: V,
+        client_cert: V,
+        client_key: V,
+        endpoint_config: C,
+    ) -> Result<Self> {
+        let extra = Tls {
+            async_client: AsyncTlsClient::new_with_endpoint_config(
+                endpoints,
+                server_root_ca_cert,
+                client_cert,
+                client_key,
+                endpoint_config,
             )?,
         };
         let state = Box::new(ClientState::new());

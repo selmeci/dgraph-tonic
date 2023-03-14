@@ -14,7 +14,8 @@ use crate::client::lazy::{ILazyChannel, ILazyClient};
 use crate::client::tls::LazyTlsChannel;
 use crate::client::{rnd_item, ClientVariant, DgraphClient, DgraphInterceptorClient, IClient};
 use crate::{
-    Endpoints, Status, TlsClient, TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType,
+    EndpointConfig, Endpoints, Status, TlsClient, TxnBestEffortType, TxnMutatedType,
+    TxnReadOnlyType, TxnType,
 };
 
 #[derive(Clone, Debug)]
@@ -132,6 +133,23 @@ pub type TxnSlashQlBestEffort = TxnBestEffortType<LazySlashQlClient>;
 pub type TxnSlashQlMutated = TxnMutatedType<LazySlashQlClient>;
 
 impl TlsClient {
+    fn lift_client<T: Into<String>>(api_key: T, tls_client: Self) -> Result<SlashQlClient> {
+        let api_key = Arc::new(api_key.into());
+        let clients = tls_client
+            .extra
+            .clients()
+            .into_iter()
+            .map(|client| {
+                let channel = client.channel();
+                LazySlashQlClient::new(channel, Arc::clone(&api_key))
+            })
+            .collect::<Vec<LazySlashQlClient>>();
+        Ok(SlashQlClient {
+            state: tls_client.state,
+            extra: SlashQl { clients },
+        })
+    }
+
     ///
     /// New gRPC [SlashQL](https://dgraph.io/slash-graphql) client.
     ///
@@ -169,27 +187,84 @@ impl TlsClient {
         api_key: T,
     ) -> Result<SlashQlClient> {
         let tls = Arc::new(ClientTlsConfig::new());
-        let tls_client = Self::init(endpoints, tls)?;
-        let api_key = Arc::new(api_key.into());
-        let clients = tls_client
-            .extra
-            .clients()
-            .into_iter()
-            .map(|client| {
-                let channel = client.channel();
-                LazySlashQlClient::new(channel, Arc::clone(&api_key))
-            })
-            .collect::<Vec<LazySlashQlClient>>();
-        Ok(SlashQlClient {
-            state: tls_client.state,
-            extra: SlashQl { clients },
-        })
+        let tls_client = Self::init(endpoints, tls, None)?;
+        Self::lift_client(api_key, tls_client)
+    }
+
+    ///
+    /// New gRPC [SlashQL](https://dgraph.io/slash-graphql) client with endpoint config.
+    ///
+    /// If your SlashQL endpoint is `https://app.eu-central-1.aws.cloud.dgraph.io/graphql` than connection endpoint for gRPC client is `http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443`
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `endpoints` - one endpoint or vector of endpoints
+    /// * `api_key` -  API Key for SlashQL
+    /// * `endpoint_config` - custom endpoint configuration
+    ///
+    /// # Errors
+    ///
+    /// * endpoints vector is empty
+    /// * item in vector cannot by converted into Uri
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dgraph_tonic::{Endpoint, EndpointConfig, TlsClient};
+    ///
+    /// use std::time::Duration;
+    ///
+    /// #[derive(Debug, Default)]
+    /// struct EndpointWithTimeout {}
+    ///
+    /// impl EndpointConfig for EndpointWithTimeout {
+    ///     fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+    ///         endpoint.timeout(Duration::from_secs(5))
+    ///     }
+    /// }
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let endpoint_config = EndpointWithTimeout::default();
+    ///     let client = TlsClient::for_slash_ql_with_endpoint_config(
+    ///             "http://app.eu-central-1.aws.cloud.dgraph.io:443",
+    ///             "API_KEY",
+    ///         endpoint_config).expect("Dgraph client");
+    ///     // now you can use client for all operations over DB
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub fn for_slash_ql_with_endpoint_config<
+        S: TryInto<Uri>,
+        E: Into<Endpoints<S>>,
+        T: Into<String>,
+        C: EndpointConfig + 'static,
+    >(
+        endpoints: E,
+        api_key: T,
+        endpoint_config: C,
+    ) -> Result<SlashQlClient> {
+        let tls = Arc::new(ClientTlsConfig::new());
+        let tls_client = Self::init(endpoints, tls, Some(Arc::new(endpoint_config)))?;
+        Self::lift_client(api_key, tls_client)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::TlsClient;
+    use crate::{Endpoint, EndpointConfig, TlsClient};
+    use std::time::Duration;
+
+    #[derive(Debug, Default)]
+    struct EndpointWithTimeout {}
+
+    impl EndpointConfig for EndpointWithTimeout {
+        fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+            endpoint.timeout(Duration::from_secs(5))
+        }
+    }
 
     //#[tokio::test]
     #[allow(dead_code)]
@@ -197,6 +272,20 @@ mod tests {
         let client = TlsClient::for_slash_ql(
             "http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443",
             "API_KEY",
+        )
+        .unwrap();
+        let version = client.check_version().await;
+        assert!(version.is_ok());
+    }
+
+    //#[tokio::test]
+    #[allow(dead_code)]
+    async fn for_slash_ql_with_endpoint_config() {
+        let endpoint_config = EndpointWithTimeout::default();
+        let client = TlsClient::for_slash_ql_with_endpoint_config(
+            "http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443",
+            "API_KEY",
+            endpoint_config,
         )
         .unwrap();
         let version = client.check_version().await;

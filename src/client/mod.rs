@@ -7,7 +7,7 @@ use http::Uri;
 use rand::Rng;
 #[cfg(any(feature = "acl", feature = "slash-ql"))]
 use tonic::codegen::InterceptedService;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, Endpoint};
 
 use crate::api::dgraph_client::DgraphClient as DClient;
 use crate::api::Version;
@@ -110,6 +110,13 @@ pub enum DgraphClient {
 ///
 #[cfg(any(feature = "acl", feature = "slash-ql"))]
 pub type DgraphInterceptorClient<T> = DClient<InterceptedService<Channel, T>>;
+
+///
+/// Allow custom configuration of endpoint
+///
+pub trait EndpointConfig: Send + Sync + Debug {
+    fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint;
+}
 
 ///
 /// Marker for client variant implementation
