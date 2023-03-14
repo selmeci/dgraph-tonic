@@ -10,7 +10,6 @@ pub use crate::api::{
     Check, Latency, LoginRequest, Mutation, Operation, Payload, Request, Response, TxnContext,
     Version,
 };
-pub use crate::client::Endpoints;
 #[cfg(feature = "acl")]
 pub use crate::client::{
     AclClient, AclClientType, LazyChannel, TxnAcl, TxnAclBestEffort, TxnAclMutated, TxnAclReadOnly,
@@ -20,7 +19,8 @@ pub use crate::client::{
     AclTlsClient, TxnAclTls, TxnAclTlsBestEffort, TxnAclTlsMutated, TxnAclTlsReadOnly,
 };
 pub use crate::client::{
-    Client, ClientVariant, Http, IClient, Txn, TxnBestEffort, TxnMutated, TxnReadOnly,
+    Client, ClientVariant, EndpointConfig, Endpoints, Http, IClient, Txn, TxnBestEffort,
+    TxnMutated, TxnReadOnly,
 };
 #[cfg(feature = "slash-ql")]
 pub use crate::client::{

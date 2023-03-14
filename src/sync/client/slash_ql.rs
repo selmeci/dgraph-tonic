@@ -15,7 +15,7 @@ use crate::client::{
 use crate::sync::client::{ClientState, ClientVariant, IClient, TlsClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
-use crate::Endpoints;
+use crate::{EndpointConfig, Endpoints};
 
 ///
 /// Inner state for Tls Client
@@ -137,6 +137,74 @@ impl TlsClient {
     ) -> Result<SlashQlClient> {
         let extra = SlashQl {
             async_client: AsyncTlsClient::for_slash_ql(endpoints, api_key)?,
+        };
+        let state = Box::new(ClientState::new());
+        Ok(SlashQlClient { state, extra })
+    }
+
+    ///
+    /// New gRPC [SlashQL](https://dgraph.io/slash-graphql) client with custom endpoint configuration.
+    ///
+    /// If your SlashQL endpoint is `https://app.eu-central-1.aws.cloud.dgraph.io/graphql` than connection endpoint for gRPC client is `http://app.grpc.eu-central-1.aws.cloud.dgraph.io:443`
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `endpoints` - one endpoint or vector of endpoints
+    /// * `api_key` -  API Key for SlashQL
+    /// * `endpoint_config` - custom endpoint configuration
+    ///
+    /// # Errors
+    ///
+    /// * endpoints vector is empty
+    /// * item in vector cannot by converted into Uri
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use dgraph_tonic::{Endpoint, EndpointConfig};
+    ///
+    /// use dgraph_tonic::sync::TlsClient;
+    ///
+    /// use std::time::Duration;
+    ///
+    /// #[derive(Debug, Default)]
+    /// struct EndpointWithTimeout {}
+    ///
+    /// impl EndpointConfig for EndpointWithTimeout {
+    ///     fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+    ///         endpoint.timeout(Duration::from_secs(5))
+    ///     }
+    /// }
+    ///
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let endpoint_config = EndpointWithTimeout::default();
+    ///     let client = TlsClient::for_slash_ql_with_endpoint_config(
+    ///             "http://app.eu-central-1.aws.cloud.dgraph.io:443",
+    ///             "API_KEY",
+    ///             endpoint_config
+    ///         ).expect("Dgraph client");
+    ///     // now you can use client for all operations over DB
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub fn for_slash_ql_with_endpoint_config<
+        S: TryInto<Uri>,
+        E: Into<Endpoints<S>>,
+        T: Into<String>,
+        C: EndpointConfig + 'static,
+    >(
+        endpoints: E,
+        api_key: T,
+        endpoint_config: C,
+    ) -> Result<SlashQlClient> {
+        let extra = SlashQl {
+            async_client: AsyncTlsClient::for_slash_ql_with_endpoint_config(
+                endpoints,
+                api_key,
+                endpoint_config,
+            )?,
         };
         let state = Box::new(ClientState::new());
         Ok(SlashQlClient { state, extra })

@@ -41,7 +41,7 @@ Before using this client, it is highly recommended to go through [tour.dgraph.io
 
 ```toml
 [dependencies]
-dgraph-tonic = "0.10"
+dgraph-tonic = "0.11"
 ```
 
 Default feature is `dgraph-1-1`.
@@ -50,14 +50,14 @@ All avaiable features can be activeted with:
 
 ```toml
 [dependencies]
-dgraph-tonic = {version = "0.10", features = ["all"]}
+dgraph-tonic = {version = "0.11", features = ["all"]}
 ```
 
 If you want to use Dgraph v1.0.x, add this dependency:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.10", features = ["dgraph-1-0"], default-features = false }
+dgraph-tonic = { version = "0.11", features = ["dgraph-1-0"], default-features = false }
 ```
 
 Supported features:
@@ -94,14 +94,44 @@ Note: Only API breakage from **dgraph-1-0* to *dgraph-1-1* is in the function `M
 The following code snippet shows it with just one endpoint.
 
 ```rust
-let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+use dgraph_tonic::Client;
+
+fn main() {
+  let client = Client::new("http://127.0.0.1:19080").expect("Dgraph client");
+}
 ```
 
 or you can initialize new client with a multiple endpoints. Client cannot be create with empty endpoints vector.
 
 ```rust
-let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"]).expect("Dgraph client");
+use dgraph_tonic::Client;
+
+fn main() {
+  let client = Client::new(vec!["http://127.0.0.1:9080","http://127.0.0.1:19080"]).expect("Dgraph client");
+}
 ```
+
+Client can be also initialized with custom [endpoint configuration.](https://docs.rs/tonic/0.8.3/tonic/transport/struct.Endpoint.html)
+```rust
+use dgraph_tonic::{Endpoint, EndpointConfig, Client};
+
+use std::time::Duration;
+
+#[derive(Debug, Default)]
+struct EndpointWithTimeout {}
+
+impl EndpointConfig for EndpointWithTimeout {
+    fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+        endpoint.timeout(Duration::from_secs(5))
+    }
+}
+
+fn main() {
+  let endpoint_config = EndpointWithTimeout::default();
+  let client = Client::new_with_endpoint_config("http://127.0.0.1:19080",endpoint_config).expect("Dgraph client");
+}
+```
+
 
 ### Create a TLS client
 
@@ -109,7 +139,7 @@ Alternatively, secure tls client is avaible in `tls` feature:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.10", features = ["tls"] }
+dgraph-tonic = { version = "0.11", features = ["tls"] }
 ```
 
 ```rust
@@ -159,7 +189,7 @@ Client is avaible in `slash-ql` feature:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.10", features = ["slash-ql"] }
+dgraph-tonic = { version = "0.11", features = ["slash-ql"] }
 ```
 
 ```rust
@@ -180,7 +210,7 @@ Alternatively, synchronous clients (Tls, Acl) are avaible with `sync` feature in
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.10", features = ["sync"] }
+dgraph-tonic = { version = "0.11", features = ["sync"] }
 ```
 
 ```rust
@@ -586,7 +616,7 @@ This enterprise Dgraph feature which can be activated with:
 
 ```toml
 [dependencies]
-dgraph-tonic = { version = "0.10", features = ["acl"] }
+dgraph-tonic = { version = "0.11", features = ["acl"] }
 ```
 
 [Access Control List (ACL)](https://dgraph.io/docs/enterprise-features/#access-control-lists) provides access protection to your data stored in Dgraph. When the ACL feature is turned on, a client must authenticate with a username and password before executing any transactions, and is only allowed to access the data permitted by the ACL rules.

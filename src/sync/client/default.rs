@@ -12,7 +12,7 @@ use crate::client::{Client as AsyncClient, IClient as IAsyncClient, LazyChannel}
 use crate::sync::client::{ClientState, ClientVariant, IClient};
 use crate::sync::txn::{TxnBestEffortType, TxnMutatedType, TxnReadOnlyType, TxnType as SyncTxn};
 use crate::txn::TxnType;
-use crate::Endpoints;
+use crate::{EndpointConfig, Endpoints};
 
 ///
 /// Inner state for default Client
@@ -126,6 +126,61 @@ impl Client {
     pub fn new<S: TryInto<Uri>, E: Into<Endpoints<S>> + Debug>(endpoints: E) -> Result<Self> {
         let extra = Default {
             async_client: AsyncClient::new(endpoints)?,
+        };
+        let state = Box::new(ClientState::new());
+        Ok(Self { state, extra })
+    }
+
+    ///
+    /// Create new Sync Dgraph client with custom endpoint configuration for interacting with DB.
+    ///
+    /// The client can be backed by multiple endpoints (to the same server, or multiple servers in a cluster).
+    ///
+    /// # Arguments
+    ///
+    /// * `endpoints` - one endpoint or vector of endpoints
+    /// * `endpoint_config` - custom endpoint configuration
+    ///
+    /// # Errors
+    ///
+    /// * endpoints vector is empty
+    /// * item in vector cannot by converted into Uri
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use dgraph_tonic::{Endpoint, EndpointConfig};
+    /// use dgraph_tonic::sync::Client;
+    ///
+    /// use std::time::Duration;
+    ///
+    /// #[derive(Debug, Default)]
+    /// struct EndpointWithTimeout {}
+    ///
+    /// impl EndpointConfig for EndpointWithTimeout {
+    ///     fn configure_endpoint(&self, endpoint: Endpoint) -> Endpoint {
+    ///         endpoint.timeout(Duration::from_secs(5))
+    ///     }
+    /// }
+    ///
+    /// // vector of endpoints
+    /// let client = Client::new(vec!["http://127.0.0.1:19080", "http://127.0.0.1:19080"]).expect("Dgraph client");
+    /// // custom configuration
+    /// let endpoint_config = EndpointWithTimeout::default();
+    /// // one endpoint
+    /// let client = Client::new_with_endpoint_config("http://127.0.0.1:19080",endpoint_config).expect("Dgraph client");
+    /// ```
+    ///
+    pub fn new_with_endpoint_config<
+        S: TryInto<Uri>,
+        E: Into<Endpoints<S>> + Debug,
+        C: EndpointConfig + 'static,
+    >(
+        endpoints: E,
+        endpoint_config: C,
+    ) -> Result<Self> {
+        let extra = Default {
+            async_client: AsyncClient::new_with_endpoint_config(endpoints, endpoint_config)?,
         };
         let state = Box::new(ClientState::new());
         Ok(Self { state, extra })
